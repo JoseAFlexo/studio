@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,8 +9,8 @@ body {
 
 @layer base {
   :root {
-    --background: 148 32% 11%;
-    --foreground: 225 20% 94%;
+    --background: 220 14% 10%;
+    --foreground: 220 14% 79%;
     --card: 220 17% 27%;
     --card-foreground: 225 20% 94%;
     --popover: 220 17% 27%;
@@ -48,8 +49,8 @@ body {
     --soft-borders: 216 13% 35%;
   }
   .dark {
-    --background: 148 32% 11%;
-    --foreground: 225 20% 94%;
+    --background: 220 14% 10%;
+    --foreground: 220 14% 79%;
     --card: 220 17% 27%;
     --card-foreground: 225 20% 94%;
     --popover: 220 17% 27%;
@@ -96,4 +97,3 @@ body {
     @apply bg-background text-foreground;
   }
 }
-

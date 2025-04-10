@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   File,
   Search,
@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 
 const fileData = [
   { id: "1", name: "Maintenance Guide.pdf", type: "pdf", folder: "Maintenance", size: "2.5 MB", date: "2024-01-15" },
@@ -91,6 +92,8 @@ const FileExplorer = () => {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [files, setFiles] = useState(fileData);
+  const modalRef = useRef<HTMLDivElement>(null);
+
 
   const folders = [
     "Maintenance",
@@ -151,13 +154,28 @@ const FileExplorer = () => {
     }
   };
 
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        setIsModalOpen(false);
+      }
+    }
+
+    if (isModalOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isModalOpen]);
+
   return (
     <div className="flex h-full">
       {/* Folder Sidebar */}
-      <div
-        className="w-64 bg-sidebar-background p-4 flex flex-col"
-        style={{ backgroundColor: "#1e293b" }}
-      >
+      <div className="w-64 bg-sidebar-background p-4 flex flex-col">
         <h2 className="text-xl text-main-text mb-4">Folders</h2>
         {folders.map((folder) => (
           <div
@@ -166,9 +184,6 @@ const FileExplorer = () => {
               selectedFolder === folder ? "bg-accent text-main-text" : "text-secondary-text"
             }`}
             onClick={() => setSelectedFolder(folder)}
-            style={{
-              color: selectedFolder === folder ? "#f1f5f9" : "#cbd5e1",
-            }}
           >
             {React.createElement(folderIcons[folder] || FolderIcon, {
               className: "mr-2",
@@ -187,11 +202,6 @@ const FileExplorer = () => {
             type="text"
             placeholder="Search files..."
             className="bg-file-cards text-main-text border-soft-borders rounded-md py-2 px-3 w-full focus:outline-none focus:ring-2 focus:ring-accent"
-            style={{
-              backgroundColor: "#334155",
-              color: "#f1f5f9",
-              borderColor: "#475569",
-            }}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -206,7 +216,6 @@ const FileExplorer = () => {
                 <div
                   key={file.id}
                   className="bg-file-cards rounded-md p-3 flex items-center justify-between hover:bg-hover-active cursor-pointer"
-                  style={{ backgroundColor: "#334155" }}
                 >
                   <div className="flex items-center" onClick={() => handleFileClick(file)}>
                     <FileIconComponent className="mr-2 text-main-text" />
@@ -214,11 +223,12 @@ const FileExplorer = () => {
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="outline-none">
+                      <Button variant="ghost" className="h-8 w-8 p-0">
                         <MoreVertical className="text-secondary-text hover:text-main-text" />
-                      </button>
+                        <span className="sr-only">Open menu</span>
+                      </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56">
+                    <DropdownMenuContent align="end" className="w-56">
                       <DropdownMenuItem onClick={() => console.log("Share")}>
                         <Share2 className="mr-2 h-4 w-4" /> <span>Share</span>
                       </DropdownMenuItem>
@@ -245,37 +255,35 @@ const FileExplorer = () => {
 
       {/* File Preview Modal */}
       {isModalOpen && (
-        <div className="fixed top-0 left-0 w-full h-full bg-gray-800 bg-opacity-75 flex items-center justify-center">
-          <div className="bg-file-cards rounded-lg p-4 max-w-3xl max-h-3xl relative" style={{ backgroundColor: "#334155" }}>
-
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-xl text-main-text mb-2">{selectedFile?.name}</h3>
-              <div className="absolute top-2 right-2 cursor-pointer text-secondary-text hover:text-red-500" onClick={handleCloseModal}>
-                <X />
+         <div className="fixed top-0 left-0 w-full h-full bg-gray-800 bg-opacity-75 flex items-center justify-center">
+          <div className="bg-file-cards rounded-lg p-4 max-w-3xl max-h-3xl relative" ref={modalRef}>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-xl text-main-text">{selectedFile?.name}</h3>
+                <Button variant="ghost" className="h-8 w-8 p-0 rounded-full" onClick={handleCloseModal}>
+                  <X className="text-secondary-text hover:text-red-500" />
+                  <span className="sr-only">Close</span>
+                </Button>
               </div>
-              <div className="flex items-center">
-                <button onClick={handleZoomIn} className="bg-secondary-text text-main-text px-2 py-1 rounded">
-                  <ZoomIn className="h-4 w-4" />
-                </button>
-                <button onClick={handleZoomOut} className="bg-secondary-text text-main-text px-2 py-1 rounded ml-2">
-                  <ZoomOut className="h-4 w-4" />
-                </button>
+              <div className="flex items-center justify-center mb-4">
+                <Button variant="ghost" size="icon" onClick={handleZoomIn} aria-label="Zoom In">
+                  <ZoomIn className="h-5 w-5 text-secondary-text" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={handleZoomOut} aria-label="Zoom Out">
+                  <ZoomOut className="h-5 w-5 text-secondary-text" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={(e) => handlePan(e, "left")} aria-label="Pan Left">
+                  <ArrowLeft className="h-5 w-5 text-secondary-text" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={(e) => handlePan(e, "right")} aria-label="Pan Right">
+                  <ArrowRight className="h-5 w-5 text-secondary-text" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={(e) => handlePan(e, "up")} aria-label="Pan Up">
+                  <ArrowUp className="h-5 w-5 text-secondary-text" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={(e) => handlePan(e, "down")} aria-label="Pan Down">
+                  <ArrowDown className="h-5 w-5 text-secondary-text" />
+                </Button>
               </div>
-              <div className="flex items-center">
-                <button onClick={(e) => handlePan(e, "left")} className="bg-secondary-text text-main-text px-2 py-1 rounded">
-                  <ArrowLeft className="h-4 w-4" />
-                </button>
-                <button onClick={(e) => handlePan(e, "right")} className="bg-secondary-text text-main-text px-2 py-1 rounded ml-2">
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-                <button onClick={(e) => handlePan(e, "up")} className="bg-secondary-text text-main-text px-2 py-1 rounded ml-2">
-                  <ArrowUp className="h-4 w-4" />
-                </button>
-                <button onClick={(e) => handlePan(e, "down")} className="bg-secondary-text text-main-text px-2 py-1 rounded ml-2">
-                  <ArrowDown className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
             {selectedFile?.type === "pdf" ? (
               <div
                 style={{
