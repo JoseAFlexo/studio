@@ -42,10 +42,10 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
     DialogDescription,
     DialogFooter,
     DialogClose,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
@@ -325,6 +325,7 @@ const FileExplorer = () => {
     };
 
   return (
+    <>
     <div className="flex h-full">
       {/* Folder Sidebar */}
       <div className="w-64 bg-sidebar-background p-4 flex flex-col">
@@ -414,6 +415,7 @@ const FileExplorer = () => {
             </DialogFooter>
         </DialogContent>
     </Dialog>
+    <ScrollArea className="h-[calc(100vh - 200px)] w-full">
         {folders.map((folder) => (
           <div
             key={folder}
@@ -428,6 +430,7 @@ const FileExplorer = () => {
             <span>{folder}</span>
           </div>
         ))}
+        </ScrollArea>
       </div>
 
       {/* Main Content */}
@@ -452,7 +455,9 @@ const FileExplorer = () => {
               return (
                 <div
                   key={file.id}
-                  className="bg-file-cards rounded-md p-3 flex items-center justify-between hover:bg-hover-active cursor-pointer"
+                  className={`bg-file-cards rounded-md p-3 flex items-center justify-between hover:bg-hover-active cursor-pointer ${
+                    selectedFile?.id === file.id ? 'ring-2 ring-accent' : ''
+                  }`}
                 >
                   <div className="flex items-center" onClick={() => handleFileClick(file)}>
                     <FileIconComponent className="mr-2 text-main-text" />
@@ -562,6 +567,7 @@ const FileExplorer = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 
