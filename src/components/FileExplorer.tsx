@@ -20,6 +20,11 @@ import {
   ArrowRight,
   ArrowUp,
   ArrowDown,
+  Folder as FolderIcon,
+  Wrench,
+  Shield,
+  Nut,
+  ListChecks,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -57,12 +62,12 @@ const fileData = [
 ];
 
 const folderIcons = {
-  Maintenance: "🧰",
-  "Safety & Health": "🛡️",
-  Spares: "🔩",
-  "Technical Documentation": "📄",
-  Procedures: "📋",
-  Others: "📁",
+  Maintenance: Wrench,
+  "Safety & Health": Shield,
+  Spares: Nut,
+  "Technical Documentation": FileText,
+  Procedures: ListChecks,
+  Others: FolderIcon,
 };
 
 const fileTypeIcons = {
@@ -165,7 +170,9 @@ const FileExplorer = () => {
               color: selectedFolder === folder ? "#f1f5f9" : "#cbd5e1",
             }}
           >
-            <span>{folderIcons[folder]}</span>
+            {React.createElement(folderIcons[folder] || FolderIcon, {
+              className: "mr-2 text-secondary-text",
+            })}
             <span>{folder}</span>
           </div>
         ))}
