@@ -25,6 +25,7 @@ import {
   Shield,
   Nut,
   ListChecks,
+  Plus,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -180,6 +181,21 @@ const FileExplorer = () => {
           title: "Share",
           description: `Share ${file.name} functionality not implemented yet.`,
       });
+       if (navigator.share) {
+            navigator.share({
+                title: file.name,
+                url: `https://picsum.photos/400/300?random=${file.id}`
+            }).then(() => {
+                console.log('Successful share');
+            }).catch((error) => {
+                console.log('Error sharing', error);
+            });
+        } else {
+            toast({
+                title: "Share",
+                description: "Sharing is not supported on this browser.",
+            });
+        }
   };
 
   const handleDownload = (file: any) => {
@@ -211,11 +227,35 @@ const FileExplorer = () => {
       });
   };
 
+  const handleAddFile = () => {
+      console.log("Add file");
+      toast({
+          title: "Add File",
+          description: "Add file functionality not implemented yet.",
+      });
+  };
+
+  const handleCreateFolder = () => {
+      console.log("Create folder");
+      toast({
+          title: "Create Folder",
+          description: "Create folder functionality not implemented yet.",
+      });
+  };
+
   return (
     <div className="flex h-full">
       {/* Folder Sidebar */}
       <div className="w-64 bg-sidebar-background p-4 flex flex-col">
         <h2 className="text-xl text-main-text mb-4">Folders</h2>
+        <Button variant="outline" className="mb-4 w-full justify-start" onClick={handleAddFile}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add File
+        </Button>
+        <Button variant="outline" className="mb-4 w-full justify-start" onClick={handleCreateFolder}>
+          <FolderPlus className="mr-2 h-4 w-4" />
+          Create Folder
+        </Button>
         {folders.map((folder) => (
           <div
             key={folder}
