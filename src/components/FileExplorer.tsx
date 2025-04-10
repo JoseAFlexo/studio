@@ -4,17 +4,12 @@ import React, { useState, useEffect } from "react";
 import {
   Folder,
   File,
-  Download,
-  Edit,
-  Trash,
   Search,
   X,
   Image as ImageIcon,
   File as FileIcon,
   FileText,
-  Eye,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const fileData = [
@@ -141,20 +136,13 @@ const FileExplorer = () => {
             return (
               <div
                 key={file.id}
-                className="bg-file-cards rounded-md p-3 flex items-center justify-between hover:bg-hover-active"
+                className="bg-file-cards rounded-md p-3 flex items-center justify-between hover:bg-hover-active cursor-pointer"
                 style={{ backgroundColor: "#334155" }}
+                onClick={() => handleFileClick(file)}
               >
                 <div className="flex items-center">
                   <FileIcon className="mr-2 text-secondary-text" />
                   <span className="text-main-text">{file.name}</span>
-                </div>
-                <div>
-                  <Eye
-                    onClick={() => handleFileClick(file)}
-                    className="mr-2 cursor-pointer text-secondary-text hover:text-accent"
-                    style={{ color: "#cbd5e1" }}
-                  />
-                  <Download className="mr-2 cursor-pointer text-secondary-text hover:text-accent" style={{ color: "#cbd5e1" }} />
                 </div>
               </div>
             );
