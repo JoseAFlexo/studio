@@ -289,6 +289,7 @@ const FileExplorer = () => {
                 description: `${selectedFileToUpload.name} uploaded successfully.`,
             });
             setSelectedFileToUpload(null);
+             handleCloseUploadModal();
         } else {
             toast({
                 title: "Error",
