@@ -42,6 +42,18 @@ const fileData = [
   { id: "10", name: "Calibration Procedure.docx", type: "docx", folder: "Procedures", size: "1.5 MB", date: "2024-01-30" },
   { id: "11", name: "Hydraulic System.pdf", type: "pdf", folder: "Technical Documentation", size: "3.5 MB", date: "2023-11-25" },
   { id: "12", name: "First Aid Guide.pdf", type: "pdf", folder: "Safety & Health", size: "1.9 MB", date: "2024-04-10" },
+  { id: "13", name: "Maintenance Log.txt", type: "txt", folder: "Maintenance", size: "0.4 MB", date: "2024-04-15" },
+  { id: "14", name: "Risk Assessment.docx", type: "docx", folder: "Safety & Health", size: "2.0 MB", date: "2024-03-01" },
+  { id: "15", name: "Inventory List.xlsx", type: "xlsx", folder: "Spares", size: "3.0 MB", date: "2024-01-10" },
+  { id: "16", name: "Troubleshooting Guide.pdf", type: "pdf", folder: "Technical Documentation", size: "2.7 MB", date: "2023-12-15" },
+  { id: "17", name: "Quality Control.pdf", type: "pdf", folder: "Procedures", size: "2.3 MB", date: "2024-03-05" },
+  { id: "18", name: "Meeting Minutes.txt", type: "txt", folder: "Others", size: "0.2 MB", date: "2024-04-20" },
+  { id: "19", name: "Equipment Manual.pdf", type: "pdf", folder: "Maintenance", size: "3.1 MB", date: "2024-02-01" },
+  { id: "20", name: "Hazard Communication.pdf", type: "pdf", folder: "Safety & Health", size: "2.5 MB", date: "2024-03-20" },
+  { id: "21", name: "Vendor List.xlsx", type: "xlsx", folder: "Spares", size: "2.8 MB", date: "2024-01-25" },
+  { id: "22", name: "System Architecture.svg", type: "svg", folder: "Technical Documentation", size: "1.1 MB", date: "2024-02-15" },
+  { id: "23", name: "Startup Procedure.docx", type: "docx", folder: "Procedures", size: "1.7 MB", date: "2024-02-05" },
+  { id: "24", name: "Project Plan.xlsx", type: "xlsx", folder: "Others", size: "3.3 MB", date: "2024-04-25" },
 ];
 
 const folderIcons = {
