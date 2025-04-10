@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   File,
   Search,
@@ -167,12 +167,11 @@ const FileExplorer = () => {
             }`}
             onClick={() => setSelectedFolder(folder)}
             style={{
-              backgroundColor: selectedFolder === folder ? "#4ade80" : "",
               color: selectedFolder === folder ? "#f1f5f9" : "#cbd5e1",
             }}
           >
             {React.createElement(folderIcons[folder] || FolderIcon, {
-              className: "mr-2 text-secondary-text",
+              className: "mr-2",
             })}
             <span>{folder}</span>
           </div>
@@ -200,20 +199,20 @@ const FileExplorer = () => {
 
         {/* File Listing */}
         <ScrollArea className="h-[calc(100vh - 150px)] w-full">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredFiles.map((file) => {
-            const FileIcon = getFileIcon(file.type);
-            return (
-              <div
-                key={file.id}
-                className="bg-file-cards rounded-md p-3 flex items-center justify-between hover:bg-hover-active cursor-pointer"
-                style={{ backgroundColor: "#334155" }}
-              >
-                <div className="flex items-center" onClick={() => handleFileClick(file)}>
-                  <FileIcon className="mr-2 text-main-text" />
-                  <span className="text-main-text">{file.name}</span>
-                </div>
-                 <DropdownMenu>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredFiles.map((file) => {
+              const FileIconComponent = getFileIcon(file.type);
+              return (
+                <div
+                  key={file.id}
+                  className="bg-file-cards rounded-md p-3 flex items-center justify-between hover:bg-hover-active cursor-pointer"
+                  style={{ backgroundColor: "#334155" }}
+                >
+                  <div className="flex items-center" onClick={() => handleFileClick(file)}>
+                    <FileIconComponent className="mr-2 text-main-text" />
+                    <span className="text-main-text">{file.name}</span>
+                  </div>
+                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button className="outline-none">
                         <MoreVertical className="text-secondary-text hover:text-main-text" />
@@ -237,10 +236,10 @@ const FileExplorer = () => {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-              </div>
-            );
-          })}
-        </div>
+                </div>
+              );
+            })}
+          </div>
         </ScrollArea>
       </div>
 
@@ -248,12 +247,12 @@ const FileExplorer = () => {
       {isModalOpen && (
         <div className="fixed top-0 left-0 w-full h-full bg-gray-800 bg-opacity-75 flex items-center justify-center">
           <div className="bg-file-cards rounded-lg p-4 max-w-3xl max-h-3xl relative" style={{ backgroundColor: "#334155" }}>
-            
+
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-xl text-main-text mb-2">{selectedFile?.name}</h3>
               <div className="absolute top-2 right-2 cursor-pointer text-secondary-text hover:text-red-500" onClick={handleCloseModal}>
-                  <X />
-                </div>
+                <X />
+              </div>
               <div className="flex items-center">
                 <button onClick={handleZoomIn} className="bg-secondary-text text-main-text px-2 py-1 rounded">
                   <ZoomIn className="h-4 w-4" />
