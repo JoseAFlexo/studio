@@ -194,7 +194,7 @@ const FileExplorer = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-4">
+      <div className="flex-1 p-4 flex flex-col">
         {/* Search Bar */}
         <div className="mb-4 flex items-center space-x-2">
           <Search className="text-secondary-text" />
