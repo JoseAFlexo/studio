@@ -37,6 +37,17 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogDescription,
+    DialogFooter,
+    DialogClose,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 const fileData = [
   { id: "1", name: "Maintenance Guide.pdf", type: "pdf", folder: "Maintenance", size: "2.5 MB", date: "2024-01-15" },
@@ -86,6 +97,18 @@ const fileTypeIcons = {
   default: FileIcon,
 };
 
+const FolderIconOptions = [
+    Wrench,
+    Shield,
+    Nut,
+    FileText,
+    ListChecks,
+    FolderIcon,
+    File,
+    ImageIcon,
+];
+
+
 const FileExplorer = () => {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -95,16 +118,18 @@ const FileExplorer = () => {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [files, setFiles] = useState(fileData);
   const modalRef = useRef<HTMLDivElement>(null);
-
-
-  const folders = [
+  const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [newFolderIcon, setNewFolderIcon] = useState<any>(FolderIcon);
+  const [folders, setFolders] = useState([
     "Maintenance",
     "Safety & Health",
     "Spares",
     "Technical Documentation",
     "Procedures",
     "Others",
-  ];
+  ]);
+
 
   const filteredFiles = files.filter((file) => {
     if (selectedFolder && file.folder !== selectedFolder) {
@@ -236,12 +261,44 @@ const FileExplorer = () => {
   };
 
   const handleCreateFolder = () => {
-      console.log("Create folder");
-      toast({
-          title: "Create Folder",
-          description: "Create folder functionality not implemented yet.",
-      });
-  };
+        setIsCreateFolderModalOpen(true);
+    };
+
+    const handleCloseCreateFolderModal = () => {
+        setIsCreateFolderModalOpen(false);
+        setNewFolderName("");
+        setNewFolderIcon(FolderIcon);
+    };
+
+    const handleIconSelect = (icon: any) => {
+        setNewFolderIcon(icon);
+    };
+
+    const handleCreateFolderConfirm = () => {
+        if (newFolderName.trim() !== "") {
+            const newFolder = newFolderName.trim();
+            if (!folders.includes(newFolder)) {
+                setFolders([...folders, newFolder]);
+                setIsCreateFolderModalOpen(false);
+                setNewFolderName("");
+                setNewFolderIcon(FolderIcon);
+                toast({
+                    title: "Folder Created",
+                    description: `Folder "${newFolder}" created successfully.`,
+                });
+            } else {
+                toast({
+                    title: "Error",
+                    description: `Folder "${newFolder}" already exists.`,
+                });
+            }
+        } else {
+            toast({
+                title: "Error",
+                description: "Folder name cannot be empty.",
+            });
+        }
+    };
 
   return (
     <div className="flex h-full">
@@ -252,10 +309,57 @@ const FileExplorer = () => {
           <Plus className="mr-2 h-4 w-4" />
           Add File
         </Button>
-        <Button variant="outline" className="mb-4 w-full justify-start" onClick={handleCreateFolder}>
-          <FolderPlus className="mr-2 h-4 w-4" />
-          Create Folder
-        </Button>
+        <Dialog>
+        <DialogTrigger asChild>
+            <Button variant="outline" className="mb-4 w-full justify-start">
+                <FolderPlus className="mr-2 h-4 w-4" />
+                Create Folder
+            </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+                <DialogTitle>Create New Folder</DialogTitle>
+                <DialogDescription>
+                    Choose a name and icon for your new folder.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 gap-2">
+                    {FolderIconOptions.map((Icon, index) => (
+                        <Button
+                            key={index}
+                            variant="ghost"
+                            className={`
+                                w-10 h-10 p-0
+                                ${newFolderIcon === Icon ? "bg-accent" : ""}
+                            `}
+                            onClick={() => handleIconSelect(Icon)}
+                            aria-label={`Select ${Icon.name} Icon`}
+                        >
+                            <Icon className="w-5 h-5" />
+                        </Button>
+                    ))}
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="name">Folder Name</Label>
+                    <Input
+                        id="name"
+                        value={newFolderName}
+                        onChange={(e) => setNewFolderName(e.target.value)}
+                        placeholder="Enter folder name"
+                    />
+                </div>
+            </div>
+            <DialogFooter>
+                <DialogClose asChild>
+                    <Button type="button" variant="secondary">
+                        Cancel
+                    </Button>
+                </DialogClose>
+                <Button type="submit" onClick={handleCreateFolderConfirm}>Create</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
         {folders.map((folder) => (
           <div
             key={folder}
