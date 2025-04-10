@@ -226,11 +226,12 @@ const FileExplorer = () => {
       {isModalOpen && (
         <div className="fixed top-0 left-0 w-full h-full bg-gray-800 bg-opacity-75 flex items-center justify-center">
           <div className="bg-file-cards rounded-lg p-4 max-w-3xl max-h-3xl relative" style={{ backgroundColor: "#334155" }}>
-            <div className="absolute top-2 right-2 cursor-pointer text-secondary-text hover:text-red-500" onClick={handleCloseModal}>
-              <X />
-            </div>
-            <h3 className="text-xl text-main-text mb-2">{selectedFile?.name}</h3>
+            
             <div className="flex justify-between items-center mb-2">
+              <h3 className="text-xl text-main-text mb-2">{selectedFile?.name}</h3>
+              <div className="absolute top-2 right-2 cursor-pointer text-secondary-text hover:text-red-500" onClick={handleCloseModal}>
+                  <X />
+                </div>
               <div className="flex items-center">
                 <button onClick={handleZoomIn} className="bg-secondary-text text-main-text px-2 py-1 rounded">
                   <ZoomIn className="h-4 w-4" />
