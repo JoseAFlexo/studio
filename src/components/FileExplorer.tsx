@@ -14,6 +14,12 @@ import {
   Share2,
   FolderPlus,
   Trash2,
+  ZoomIn,
+  ZoomOut,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -225,63 +231,63 @@ const FileExplorer = () => {
             </div>
             <h3 className="text-xl text-main-text mb-2">{selectedFile?.name}</h3>
             <div className="flex justify-between items-center mb-2">
-                <div>
-                    <button onClick={handleZoomIn} className="bg-secondary-text text-main-text px-2 py-1 rounded">
-                        Zoom In
-                    </button>
-                    <button onClick={handleZoomOut} className="bg-secondary-text text-main-text px-2 py-1 rounded ml-2">
-                        Zoom Out
-                    </button>
-                </div>
-                <div>
-                    <button onClick={(e) => handlePan(e, "left")} className="bg-secondary-text text-main-text px-2 py-1 rounded">
-                        Pan Left
-                    </button>
-                    <button onClick={(e) => handlePan(e, "right")} className="bg-secondary-text text-main-text px-2 py-1 rounded ml-2">
-                        Pan Right
-                    </button>
-                    <button onClick={(e) => handlePan(e, "up")} className="bg-secondary-text text-main-text px-2 py-1 rounded ml-2">
-                        Pan Up
-                    </button>
-                    <button onClick={(e) => handlePan(e, "down")} className="bg-secondary-text text-main-text px-2 py-1 rounded ml-2">
-                        Pan Down
-                    </button>
-                </div>
+              <div className="flex items-center">
+                <button onClick={handleZoomIn} className="bg-secondary-text text-main-text px-2 py-1 rounded">
+                  <ZoomIn className="h-4 w-4" />
+                </button>
+                <button onClick={handleZoomOut} className="bg-secondary-text text-main-text px-2 py-1 rounded ml-2">
+                  <ZoomOut className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="flex items-center">
+                <button onClick={(e) => handlePan(e, "left")} className="bg-secondary-text text-main-text px-2 py-1 rounded">
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+                <button onClick={(e) => handlePan(e, "right")} className="bg-secondary-text text-main-text px-2 py-1 rounded ml-2">
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                <button onClick={(e) => handlePan(e, "up")} className="bg-secondary-text text-main-text px-2 py-1 rounded ml-2">
+                  <ArrowUp className="h-4 w-4" />
+                </button>
+                <button onClick={(e) => handlePan(e, "down")} className="bg-secondary-text text-main-text px-2 py-1 rounded ml-2">
+                  <ArrowDown className="h-4 w-4" />
+                </button>
+              </div>
             </div>
             {selectedFile?.type === "pdf" ? (
               <div
                 style={{
-                    width: '100%',
-                    height: '500px',
-                    overflow: 'auto',
-                    transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
-                    transformOrigin: 'top left',
+                  width: '100%',
+                  height: '500px',
+                  overflow: 'auto',
+                  transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
+                  transformOrigin: 'top left',
                 }}
-            >
+              >
                 <p className="text-main-text">PDF Preview Placeholder</p>
-            </div>
+              </div>
             ) : selectedFile?.type === "png" || selectedFile?.type === "jpg" || selectedFile?.type === "jpeg" || selectedFile?.type === "svg" ? (
               <div
-                    style={{
-                        width: '100%',
-                        height: '500px',
-                        overflow: 'auto',
-                        transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
-                        transformOrigin: 'top left',
-                    }}
-                >
-                    <img
-                        src={`https://picsum.photos/400/300?random=${selectedFile.id}`}
-                        alt="Preview"
-                        className="max-h-96"
-                        style={{
-                            width: 'auto',
-                            height: 'auto',
-                            maxWidth: 'none',
-                            maxHeight: 'none',
-                        }}
-                    />
-                </div>
+                style={{
+                  width: '100%',
+                  height: '500px',
+                  overflow: 'auto',
+                  transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
+                  transformOrigin: 'top left',
+                }}
+              >
+                <img
+                  src={`https://picsum.photos/400/300?random=${selectedFile.id}`}
+                  alt="Preview"
+                  className="max-h-96"
+                  style={{
+                    width: 'auto',
+                    height: 'auto',
+                    maxWidth: 'none',
+                    maxHeight: 'none',
+                  }}
+                />
+              </div>
             ) : (
               <p className="text-main-text">Unsupported file format</p>
             )}
