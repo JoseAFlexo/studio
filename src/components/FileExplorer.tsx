@@ -33,6 +33,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const fileData = [
   { id: "1", name: "Maintenance Guide.pdf", type: "pdf", folder: "Maintenance", size: "2.5 MB", date: "2024-01-15" },
@@ -198,6 +199,7 @@ const FileExplorer = () => {
         </div>
 
         {/* File Listing */}
+        <ScrollArea className="h-[calc(100vh - 150px)] w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredFiles.map((file) => {
             const FileIcon = getFileIcon(file.type);
@@ -208,7 +210,7 @@ const FileExplorer = () => {
                 style={{ backgroundColor: "#334155" }}
               >
                 <div className="flex items-center" onClick={() => handleFileClick(file)}>
-                  <FileIcon className="mr-2 text-secondary-text" />
+                  <FileIcon className="mr-2 text-main-text" />
                   <span className="text-main-text">{file.name}</span>
                 </div>
                  <DropdownMenu>
@@ -239,6 +241,7 @@ const FileExplorer = () => {
             );
           })}
         </div>
+        </ScrollArea>
       </div>
 
       {/* File Preview Modal */}
