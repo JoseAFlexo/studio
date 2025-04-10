@@ -9,8 +9,20 @@ import {
   Image as ImageIcon,
   File as FileIcon,
   FileText,
+  MoreVertical,
+  Download,
+  Edit,
+  Share2,
+  FolderPlus,
+  Trash2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const fileData = [
   { id: "1", name: "Maintenance Guide.pdf", type: "pdf", folder: "Maintenance", size: "2.5 MB", date: "2024-01-15" },
@@ -138,12 +150,35 @@ const FileExplorer = () => {
                 key={file.id}
                 className="bg-file-cards rounded-md p-3 flex items-center justify-between hover:bg-hover-active cursor-pointer"
                 style={{ backgroundColor: "#334155" }}
-                onClick={() => handleFileClick(file)}
               >
-                <div className="flex items-center">
+                <div className="flex items-center" onClick={() => handleFileClick(file)}>
                   <FileIcon className="mr-2 text-secondary-text" />
                   <span className="text-main-text">{file.name}</span>
                 </div>
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="outline-none">
+                        <MoreVertical className="text-secondary-text hover:text-main-text" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56">
+                      <DropdownMenuItem onClick={() => console.log("Share")}>
+                        <Share2 className="mr-2 h-4 w-4" /> <span>Share</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => console.log("Move")}>
+                        <FolderPlus className="mr-2 h-4 w-4" /> <span>Move to...</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => console.log("Rename")}>
+                        <Edit className="mr-2 h-4 w-4" /> <span>Rename</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => console.log("Download")}>
+                        <Download className="mr-2 h-4 w-4" /> <span>Download</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => console.log("Delete")} className="text-destructive focus:text-destructive">
+                        <Trash2 className="mr-2 h-4 w-4" /> <span>Delete</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
               </div>
             );
           })}
