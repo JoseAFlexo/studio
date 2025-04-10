@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Folder,
   File,
   Search,
   X,
@@ -65,6 +64,8 @@ const FileExplorer = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFile, setSelectedFile] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   const [files, setFiles] = useState(fileData);
 
   const folders = [
@@ -86,6 +87,8 @@ const FileExplorer = () => {
   const handleFileClick = (file: any) => {
     setSelectedFile(file);
     setIsModalOpen(true);
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
   };
 
   const handleCloseModal = () => {
@@ -94,6 +97,34 @@ const FileExplorer = () => {
 
   const getFileIcon = (type: string) => {
     return fileTypeIcons[type] || fileTypeIcons.default;
+  };
+
+  const handleZoomIn = () => {
+    setZoom((prevZoom) => prevZoom + 0.1);
+  };
+
+  const handleZoomOut = () => {
+    setZoom((prevZoom) => Math.max(0.1, prevZoom - 0.1));
+  };
+
+  const handlePan = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, direction: string) => {
+    e.stopPropagation();
+    switch (direction) {
+      case "left":
+        setPan((prevPan) => ({ ...prevPan, x: prevPan.x - 10 }));
+        break;
+      case "right":
+        setPan((prevPan) => ({ ...prevPan, x: prevPan.x + 10 }));
+        break;
+      case "up":
+        setPan((prevPan) => ({ ...prevPan, y: prevPan.y - 10 }));
+        break;
+      case "down":
+        setPan((prevPan) => ({ ...prevPan, y: prevPan.y + 10 }));
+        break;
+      default:
+        break;
+    }
   };
 
   return (
@@ -193,10 +224,64 @@ const FileExplorer = () => {
               <X />
             </div>
             <h3 className="text-xl text-main-text mb-2">{selectedFile?.name}</h3>
+            <div className="flex justify-between items-center mb-2">
+                <div>
+                    <button onClick={handleZoomIn} className="bg-secondary-text text-main-text px-2 py-1 rounded">
+                        Zoom In
+                    </button>
+                    <button onClick={handleZoomOut} className="bg-secondary-text text-main-text px-2 py-1 rounded ml-2">
+                        Zoom Out
+                    </button>
+                </div>
+                <div>
+                    <button onClick={(e) => handlePan(e, "left")} className="bg-secondary-text text-main-text px-2 py-1 rounded">
+                        Pan Left
+                    </button>
+                    <button onClick={(e) => handlePan(e, "right")} className="bg-secondary-text text-main-text px-2 py-1 rounded ml-2">
+                        Pan Right
+                    </button>
+                    <button onClick={(e) => handlePan(e, "up")} className="bg-secondary-text text-main-text px-2 py-1 rounded ml-2">
+                        Pan Up
+                    </button>
+                    <button onClick={(e) => handlePan(e, "down")} className="bg-secondary-text text-main-text px-2 py-1 rounded ml-2">
+                        Pan Down
+                    </button>
+                </div>
+            </div>
             {selectedFile?.type === "pdf" ? (
-              <p className="text-main-text">PDF Preview Placeholder</p>
+              <div
+                style={{
+                    width: '100%',
+                    height: '500px',
+                    overflow: 'auto',
+                    transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
+                    transformOrigin: 'top left',
+                }}
+            >
+                <p className="text-main-text">PDF Preview Placeholder</p>
+            </div>
             ) : selectedFile?.type === "png" || selectedFile?.type === "jpg" || selectedFile?.type === "jpeg" || selectedFile?.type === "svg" ? (
-              <img src={`https://picsum.photos/400/300?random=${selectedFile.id}`} alt="Preview" className="max-h-96" />
+              <div
+                    style={{
+                        width: '100%',
+                        height: '500px',
+                        overflow: 'auto',
+                        transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
+                        transformOrigin: 'top left',
+                    }}
+                >
+                    <img
+                        src={`https://picsum.photos/400/300?random=${selectedFile.id}`}
+                        alt="Preview"
+                        className="max-h-96"
+                        style={{
+                            width: 'auto',
+                            height: 'auto',
+                            maxWidth: 'none',
+                            maxHeight: 'none',
+                        }}
+                    />
+                </div>
             ) : (
               <p className="text-main-text">Unsupported file format</p>
             )}
