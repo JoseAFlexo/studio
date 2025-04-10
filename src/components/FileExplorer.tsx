@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 const fileData = [
   { id: "1", name: "Maintenance Guide.pdf", type: "pdf", folder: "Maintenance", size: "2.5 MB", date: "2024-01-15" },
@@ -172,6 +173,44 @@ const FileExplorer = () => {
     };
   }, [isModalOpen]);
 
+
+  const handleShare = (file: any) => {
+      console.log(`Share ${file.name}`);
+      toast({
+          title: "Share",
+          description: `Share ${file.name} functionality not implemented yet.`,
+      });
+  };
+
+  const handleDownload = (file: any) => {
+      const link = document.createElement('a');
+      link.href = `https://picsum.photos/400/300?random=${file.id}`;
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({
+          title: "Download",
+          description: `Downloading ${file.name}`,
+      });
+  };
+
+  const handleRename = (file: any) => {
+      console.log(`Rename ${file.name}`);
+      toast({
+          title: "Rename",
+          description: `Rename ${file.name} functionality not implemented yet.`,
+      });
+  };
+
+  const handleDelete = (file: any) => {
+      setFiles(currentFiles => currentFiles.filter(f => f.id !== file.id));
+      toast({
+          title: "Delete",
+          description: `${file.name} deleted successfully.`,
+      });
+  };
+
   return (
     <div className="flex h-full">
       {/* Folder Sidebar */}
@@ -229,19 +268,19 @@ const FileExplorer = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuItem onClick={() => console.log("Share")}>
+                      <DropdownMenuItem onClick={() => handleShare(file)}>
                         <Share2 className="mr-2 h-4 w-4" /> <span>Share</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => console.log("Move")}>
                         <FolderPlus className="mr-2 h-4 w-4" /> <span>Move to...</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => console.log("Rename")}>
+                      <DropdownMenuItem onClick={() => handleRename(file)}>
                         <Edit className="mr-2 h-4 w-4" /> <span>Rename</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => console.log("Download")}>
+                      <DropdownMenuItem onClick={() => handleDownload(file)}>
                         <Download className="mr-2 h-4 w-4" /> <span>Download</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => console.log("Delete")} className="text-destructive focus:text-destructive">
+                      <DropdownMenuItem onClick={() => handleDelete(file)} className="text-destructive focus:text-destructive">
                         <Trash2 className="mr-2 h-4 w-4" /> <span>Delete</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
