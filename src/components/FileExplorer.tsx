@@ -73,7 +73,7 @@ const fileData = [
   { id: "21", name: "Vendor List.xlsx", type: "xlsx", folder: "Spares", size: "2.8 MB", date: "2024-01-25" },
   { id: "22", name: "System Architecture.svg", type: "svg", folder: "Technical Documentation", size: "1.1 MB", date: "2024-02-15" },
   { id: "23", name: "Startup Procedure.docx", type: "docx", folder: "Procedures", size: "1.7 MB", date: "2024-02-05" },
-  { id: "24", name: "Project Plan.xlsx", type: "xlsx", folder: "Others", size: "3.3 MB", date: "2024-04-25" },
+  { id: "24", name: "Project Plan.xlsx", folder: "Others", size: "3.3 MB", date: "2024-04-25" },
 ];
 
 const folderIcons = {
@@ -129,6 +129,8 @@ const FileExplorer = () => {
     "Procedures",
     "Others",
   ]);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
 
   const filteredFiles = files.filter((file) => {
@@ -252,13 +254,35 @@ const FileExplorer = () => {
       });
   };
 
-  const handleAddFile = () => {
-      console.log("Add file");
-      toast({
-          title: "Add File",
-          description: "Add file functionality not implemented yet.",
-      });
-  };
+    const handleAddFile = () => {
+        setIsUploadModalOpen(true);
+    };
+
+    const handleCloseUploadModal = () => {
+        setIsUploadModalOpen(false);
+    };
+
+    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const fileType = file.name.split('.').pop() || 'default';
+            const newFile = {
+                id: String(Date.now()),
+                name: file.name,
+                type: fileType,
+                folder: selectedFolder || "Others",
+                size: (file.size / 1024 / 1024).toFixed(2) + " MB",
+                date: new Date().toLocaleDateString(),
+            };
+            setFiles(currentFiles => [...currentFiles, newFile]);
+            setIsUploadModalOpen(false);
+            toast({
+                title: "File Uploaded",
+                description: `${file.name} uploaded successfully.`,
+            });
+        }
+    };
+
 
   const handleCreateFolder = () => {
         setIsCreateFolderModalOpen(true);
@@ -304,11 +328,41 @@ const FileExplorer = () => {
     <div className="flex h-full">
       {/* Folder Sidebar */}
       <div className="w-64 bg-sidebar-background p-4 flex flex-col">
-        <h2 className="text-xl text-main-text mb-4">Folders</h2>
-        <Button variant="outline" className="mb-4 w-full justify-start" onClick={handleAddFile}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add File
-        </Button>
+        <Dialog>
+        <DialogTrigger asChild>
+            <Button variant="outline" className="mb-4 w-full justify-start">
+                <Plus className="mr-2 h-4 w-4" />
+                Add File
+            </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+                <DialogTitle>Upload File</DialogTitle>
+                <DialogDescription>
+                    Choose a file to upload to the selected folder.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <input
+                    type="file"
+                    id="file-upload"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    ref={fileInputRef}
+                />
+                <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
+                    Select File
+                </Button>
+            </div>
+            <DialogFooter>
+                <DialogClose asChild>
+                    <Button type="button" variant="secondary">
+                        Cancel
+                    </Button>
+                </DialogClose>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
         <Dialog>
         <DialogTrigger asChild>
             <Button variant="outline" className="mb-4 w-full justify-start">
