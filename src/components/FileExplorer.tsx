@@ -131,6 +131,7 @@ const FileExplorer = () => {
   ]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+    const [selectedFileToUpload, setSelectedFileToUpload] = useState<File | null>(null);
 
 
   const filteredFiles = files.filter((file) => {
@@ -260,28 +261,42 @@ const FileExplorer = () => {
 
     const handleCloseUploadModal = () => {
         setIsUploadModalOpen(false);
+                setSelectedFileToUpload(null);
     };
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            const fileType = file.name.split('.').pop() || 'default';
+            setSelectedFileToUpload(file);
+        }
+    };
+
+    const handleUploadFileConfirm = () => {
+        if (selectedFileToUpload) {
+            const fileType = selectedFileToUpload.name.split('.').pop() || 'default';
             const newFile = {
                 id: String(Date.now()),
-                name: file.name,
+                name: selectedFileToUpload.name,
                 type: fileType,
                 folder: selectedFolder || "Others",
-                size: (file.size / 1024 / 1024).toFixed(2) + " MB",
+                size: (selectedFileToUpload.size / 1024 / 1024).toFixed(2) + " MB",
                 date: new Date().toLocaleDateString(),
             };
             setFiles(currentFiles => [...currentFiles, newFile]);
             setIsUploadModalOpen(false);
             toast({
                 title: "File Uploaded",
-                description: `${file.name} uploaded successfully.`,
+                description: `${selectedFileToUpload.name} uploaded successfully.`,
+            });
+            setSelectedFileToUpload(null);
+        } else {
+            toast({
+                title: "Error",
+                description: "No file selected.",
             });
         }
     };
+
 
 
   const handleCreateFolder = () => {
@@ -361,6 +376,7 @@ const FileExplorer = () => {
                         Cancel
                     </Button>
                 </DialogClose>
+                <Button type="submit" onClick={handleUploadFileConfirm}>Accept</Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>
@@ -420,7 +436,7 @@ const FileExplorer = () => {
           <div
             key={folder}
             className={`flex items-center space-x-2 py-2 px-3 rounded-md cursor-pointer hover:bg-hover-active ${
-              selectedFolder === folder ? "bg-accent text-main-text" : "text-secondary-text"
+              selectedFolder === folder ? "bg-primary text-primary-foreground" : "text-secondary-text"
             }`}
             onClick={() => setSelectedFolder(folder)}
           >
@@ -441,7 +457,7 @@ const FileExplorer = () => {
           <Input
             type="text"
             placeholder="Search files..."
-            className="bg-file-cards text-main-text border-soft-borders rounded-md py-2 px-3 w-full focus:outline-none focus:ring-2 focus:ring-accent"
+            className="bg-file-cards text-main-text border-soft-borders rounded-md py-2 px-3 w-full focus:outline-none focus:ring-2 focus:ring-primary"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -456,7 +472,7 @@ const FileExplorer = () => {
                 <div
                   key={file.id}
                   className={`bg-file-cards rounded-md p-3 flex items-center justify-between hover:bg-hover-active cursor-pointer ${
-                    selectedFile?.id === file.id ? 'ring-2 ring-accent' : ''
+                    selectedFile?.id === file.id ? 'ring-2 ring-primary' : ''
                   }`}
                 >
                   <div className="flex items-center" onClick={() => handleFileClick(file)}>
