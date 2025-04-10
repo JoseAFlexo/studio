@@ -261,7 +261,7 @@ const FileExplorer = () => {
 
     const handleCloseUploadModal = () => {
         setIsUploadModalOpen(false);
-                setSelectedFileToUpload(null);
+        setSelectedFileToUpload(null);
     };
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -369,6 +369,11 @@ const FileExplorer = () => {
                 <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
                     Select File
                 </Button>
+                {selectedFileToUpload && (
+                    <div className="text-sm text-gray-500">
+                        Selected File: {selectedFileToUpload.name}
+                    </div>
+                )}
             </div>
             <DialogFooter>
                 <DialogClose asChild>
@@ -376,7 +381,7 @@ const FileExplorer = () => {
                         Cancel
                     </Button>
                 </DialogClose>
-                <Button type="submit" onClick={handleUploadFileConfirm}>Accept</Button>
+                <Button type="submit" onClick={handleUploadFileConfirm} disabled={!selectedFileToUpload}>Accept</Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>
