@@ -1,8 +1,8 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import {
-  File,
   Search,
   X,
   Image as ImageIcon,
@@ -20,12 +20,14 @@ import {
   ArrowRight,
   ArrowUp,
   ArrowDown,
-  Folder as FolderIcon,
+  Folder as FolderIconLucide, // Renamed to avoid conflict
   Wrench,
   Shield,
   Nut,
   ListChecks,
   Plus,
+  ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -45,47 +47,66 @@ import {
     DialogDescription,
     DialogFooter,
     DialogClose,
-    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
-const fileData = [
-  { id: "1", name: "Maintenance Guide.pdf", type: "pdf", folder: "Maintenance", size: "2.5 MB", date: "2024-01-15" },
-  { id: "2", name: "Safety Protocols.docx", type: "docx", folder: "Safety & Health", size: "1.8 MB", date: "2024-02-01" },
-  { id: "3", name: "Spare Parts List.xlsx", type: "xlsx", folder: "Spares", size: "3.2 MB", date: "2023-12-20" },
-  { id: "4", name: "Technical Specs.txt", type: "txt", folder: "Technical Documentation", size: "0.5 MB", date: "2024-03-10" },
-  { id: "5", name: "Emergency Procedures.pdf", type: "pdf", folder: "Procedures", size: "2.1 MB", date: "2024-02-28" },
-  { id: "6", name: "Misc Notes.txt", type: "txt", folder: "Others", size: "0.3 MB", date: "2024-04-05" },
-  { id: "7", name: "Machine Blueprint.png", type: "png", folder: "Technical Documentation", size: "1.2 MB", date: "2024-01-22" },
-  { id: "8", name: "Chemical Handling.pdf", type: "pdf", folder: "Safety & Health", size: "2.8 MB", date: "2024-03-15" },
-  { id: "9", name: "Electrical Schematics.svg", type: "svg", folder: "Technical Documentation", size: "0.9 MB", date: "2024-02-10" },
-  { id: "10", name: "Calibration Procedure.docx", type: "docx", folder: "Procedures", size: "1.5 MB", date: "2024-01-30" },
-  { id: "11", name: "Hydraulic System.pdf", type: "pdf", folder: "Technical Documentation", size: "3.5 MB", date: "2023-11-25" },
-  { id: "12", name: "First Aid Guide.pdf", type: "pdf", folder: "Safety & Health", size: "1.9 MB", date: "2024-04-10" },
-  { id: "13", name: "Maintenance Log.txt", type: "txt", folder: "Maintenance", size: "0.4 MB", date: "2024-04-15" },
-  { id: "14", name: "Risk Assessment.docx", type: "docx", folder: "Safety & Health", size: "2.0 MB", date: "2024-03-01" },
-  { id: "15", name: "Inventory List.xlsx", type: "xlsx", folder: "Spares", size: "3.0 MB", date: "2024-01-10" },
-  { id: "16", name: "Troubleshooting Guide.pdf", type: "pdf", folder: "Technical Documentation", size: "2.7 MB", date: "2023-12-15" },
-  { id: "17", name: "Quality Control.pdf", type: "pdf", folder: "Procedures", size: "2.3 MB", date: "2024-03-05" },
-  { id: "18", name: "Meeting Minutes.txt", type: "txt", folder: "Others", size: "0.2 MB", date: "2024-04-20" },
-  { id: "19", name: "Equipment Manual.pdf", type: "pdf", folder: "Maintenance", size: "3.1 MB", date: "2024-02-01" },
-  { id: "20", name: "Hazard Communication.pdf", type: "pdf", folder: "Safety & Health", size: "2.5 MB", date: "2024-03-20" },
-  { id: "21", name: "Vendor List.xlsx", type: "xlsx", folder: "Spares", size: "2.8 MB", date: "2024-01-25" },
-  { id: "22", name: "System Architecture.svg", type: "svg", folder: "Technical Documentation", size: "1.1 MB", date: "2024-02-15" },
-  { id: "23", name: "Startup Procedure.docx", type: "docx", folder: "Procedures", size: "1.7 MB", date: "2024-02-05" },
-  { id: "24", name: "Project Plan.xlsx", folder: "Others", size: "3.3 MB", date: "2024-04-25" },
+interface InduxFile {
+  id: string;
+  name: string;
+  type: string;
+  folderId: string; 
+  size: string;
+  date: string;
+  previewUrl?: string;
+  dataAiHint?: string;
+}
+
+interface InduxFolder {
+  id: string;
+  name: string;
+  icon: React.ElementType;
+  children: InduxFolder[];
+  isExpanded?: boolean;
+}
+
+const initialFileData: InduxFile[] = [
+  { id: "1", name: "Maintenance Guide.pdf", type: "pdf", folderId: "maintenance", size: "2.5 MB", date: "2024-01-15" },
+  { id: "2", name: "Safety Protocols.docx", type: "docx", folderId: "safety", size: "1.8 MB", date: "2024-02-01" },
+  { id: "3", name: "Spare Parts List.xlsx", type: "xlsx", folderId: "spares", size: "3.2 MB", date: "2023-12-20" },
+  { id: "4", name: "Technical Specs.txt", type: "txt", folderId: "techdocs", size: "0.5 MB", date: "2024-03-10" },
+  { id: "5", name: "Emergency Procedures.pdf", type: "pdf", folderId: "procedures", size: "2.1 MB", date: "2024-02-28" },
+  { id: "6", name: "Misc Notes.txt", type: "txt", folderId: "others", size: "0.3 MB", date: "2024-04-05" },
+  { id: "7", name: "Machine Blueprint.png", type: "png", folderId: "techdocs", size: "1.2 MB", date: "2024-01-22", previewUrl: "https://placehold.co/600x400.png", dataAiHint: "blueprint machine" },
+  { id: "8", name: "Chemical Handling.pdf", type: "pdf", folderId: "safety", size: "2.8 MB", date: "2024-03-15" },
+  { id: "9", name: "Electrical Schematics.svg", type: "svg", folderId: "techdocs", size: "0.9 MB", date: "2024-02-10", previewUrl: "https://placehold.co/600x400.png", dataAiHint: "schematics electrical" },
+  { id: "10", name: "Calibration Procedure.docx", type: "docx", folderId: "procedures", size: "1.5 MB", date: "2024-01-30" },
+  { id: "11", name: "Hydraulic System.pdf", type: "pdf", folderId: "techdocs", size: "3.5 MB", date: "2023-11-25" },
+  { id: "12", name: "First Aid Guide.pdf", type: "pdf", folderId: "safety", size: "1.9 MB", date: "2024-04-10" },
+  { id: "13", name: "Maintenance Log.txt", type: "txt", folderId: "maintenance", size: "0.4 MB", date: "2024-04-15" },
+  { id: "14", name: "Risk Assessment.docx", type: "docx", folderId: "safety", size: "2.0 MB", date: "2024-03-01" },
+  { id: "15", name: "Inventory List.xlsx", type: "xlsx", folderId: "spares", size: "3.0 MB", date: "2024-01-10" },
+  { id: "16", name: "Troubleshooting Guide.pdf", type: "pdf", folderId: "techdocs", size: "2.7 MB", date: "2023-12-15" },
+  { id: "17", name: "Quality Control.pdf", type: "pdf", folderId: "procedures", size: "2.3 MB", date: "2024-03-05" },
+  { id: "18", name: "Meeting Minutes.txt", type: "txt", folderId: "others", size: "0.2 MB", date: "2024-04-20" },
+  { id: "19", name: "Equipment Manual.pdf", type: "pdf", folderId: "maintenance", size: "3.1 MB", date: "2024-02-01" },
+  { id: "20", name: "Hazard Communication.pdf", type: "pdf", folderId: "safety", size: "2.5 MB", date: "2024-03-20" },
+  { id: "21", name: "Vendor List.xlsx", type: "xlsx", folderId: "spares", size: "2.8 MB", date: "2024-01-25" },
+  { id: "22", name: "System Architecture.svg", type: "svg", folderId: "techdocs", size: "1.1 MB", date: "2024-02-15", previewUrl: "https://placehold.co/600x400.png", dataAiHint: "architecture system" },
+  { id: "23", name: "Startup Procedure.docx", type: "docx", folderId: "procedures", size: "1.7 MB", date: "2024-02-05" },
+  { id: "24", name: "Project Plan.xlsx", type: "xlsx", folderId: "others", size: "3.3 MB", date: "2024-04-25" },
 ];
 
-const folderIcons = {
-  Maintenance: Wrench,
-  "Safety & Health": Shield,
-  Spares: Nut,
-  "Technical Documentation": FileText,
-  Procedures: ListChecks,
-  Others: FolderIcon,
-};
+const initialFoldersData: InduxFolder[] = [
+  { id: "maintenance", name: "Maintenance", icon: Wrench, children: [], isExpanded: true },
+  { id: "safety", name: "Safety & Health", icon: Shield, children: [], isExpanded: true },
+  { id: "spares", name: "Spares", icon: Nut, children: [], isExpanded: true },
+  { id: "techdocs", name: "Technical Documentation", icon: FileText, children: [], isExpanded: true },
+  { id: "procedures", name: "Procedures", icon: ListChecks, children: [], isExpanded: true },
+  { id: "others", name: "Others", icon: FolderIconLucide, children: [], isExpanded: true },
+];
 
-const fileTypeIcons = {
+
+const fileTypeIcons: { [key: string]: React.ElementType } = {
   pdf: FileText,
   docx: FileText,
   xlsx: FileText,
@@ -103,45 +124,47 @@ const FolderIconOptions = [
     Nut,
     FileText,
     ListChecks,
-    FolderIcon,
-    File,
+    FolderIconLucide,
+    FileIcon,
     ImageIcon,
 ];
 
 
 const FileExplorer = () => {
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedFile, setSelectedFile] = useState<any | null>(null);
+  const [selectedFile, setSelectedFile] = useState<InduxFile | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [files, setFiles] = useState(fileData);
+  const [files, setFiles] = useState<InduxFile[]>(initialFileData);
   const modalRef = useRef<HTMLDivElement>(null);
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
-  const [newFolderIcon, setNewFolderIcon] = useState<any>(FolderIcon);
-  const [folders, setFolders] = useState([
-    "Maintenance",
-    "Safety & Health",
-    "Spares",
-    "Technical Documentation",
-    "Procedures",
-    "Others",
-  ]);
+  const [newFolderIcon, setNewFolderIcon] = useState<React.ElementType>(FolderIconLucide);
+  const [folders, setFolders] = useState<InduxFolder[]>(initialFoldersData);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-    const [selectedFileToUpload, setSelectedFileToUpload] = useState<File | null>(null);
+  const [selectedFileToUpload, setSelectedFileToUpload] = useState<File | null>(null);
 
 
   const filteredFiles = files.filter((file) => {
-    if (selectedFolder && file.folder !== selectedFolder) {
+    if (selectedFolderId && file.folderId !== selectedFolderId) {
       return false;
+    }
+    if (!selectedFolderId && file.folderId) { // Show only root files if no folder selected
+        const rootFolderIds = folders.map(f => f.id);
+        // This logic might need adjustment if files can truly be "root" (no folderId)
+        // For now, assume files always belong to a folder. If no folder is selected, show nothing or all.
+        // Let's adjust to show files of selected folder, or all files if no folder selected.
+        // If no folder is selected, it implies we are at root, so perhaps show files with no folderId or from all root folders.
+        // Current logic: if a folder is selected, filter by it. Otherwise, show all files that match search.
     }
     return file.name.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  const handleFileClick = (file: any) => {
+
+  const handleFileClick = (file: InduxFile) => {
     setSelectedFile(file);
     setIsModalOpen(true);
     setZoom(1);
@@ -153,34 +176,21 @@ const FileExplorer = () => {
   };
 
   const getFileIcon = (type: string) => {
-    return fileTypeIcons[type] || fileTypeIcons.default;
+    return fileTypeIcons[type.toLowerCase()] || fileTypeIcons.default;
   };
 
-  const handleZoomIn = () => {
-    setZoom((prevZoom) => prevZoom + 0.1);
-  };
-
-  const handleZoomOut = () => {
-    setZoom((prevZoom) => Math.max(0.1, prevZoom - 0.1));
-  };
+  const handleZoomIn = () => setZoom((prevZoom) => prevZoom + 0.1);
+  const handleZoomOut = () => setZoom((prevZoom) => Math.max(0.1, prevZoom - 0.1));
 
   const handlePan = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, direction: string) => {
     e.stopPropagation();
+    const panAmount = 10 / zoom;
     switch (direction) {
-      case "left":
-        setPan((prevPan) => ({ ...prevPan, x: prevPan.x - 10 }));
-        break;
-      case "right":
-        setPan((prevPan) => ({ ...prevPan, x: prevPan.x + 10 }));
-        break;
-      case "up":
-        setPan((prevPan) => ({ ...prevPan, y: prevPan.y - 10 }));
-        break;
-      case "down":
-        setPan((prevPan) => ({ ...prevPan, y: prevPan.y + 10 }));
-        break;
-      default:
-        break;
+      case "left": setPan((prevPan) => ({ ...prevPan, x: prevPan.x - panAmount })); break;
+      case "right": setPan((prevPan) => ({ ...prevPan, x: prevPan.x + panAmount })); break;
+      case "up": setPan((prevPan) => ({ ...prevPan, y: prevPan.y - panAmount })); break;
+      case "down": setPan((prevPan) => ({ ...prevPan, y: prevPan.y + panAmount })); break;
+      default: break;
     }
   };
 
@@ -190,407 +200,459 @@ const FileExplorer = () => {
         setIsModalOpen(false);
       }
     }
-
     if (isModalOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     } else {
       document.removeEventListener("mousedown", handleClickOutside);
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isModalOpen]);
 
-
-  const handleShare = (file: any) => {
+  const handleShare = (file: InduxFile) => {
       console.log(`Share ${file.name}`);
-      toast({
-          title: "Share",
-          description: `Share ${file.name} functionality not implemented yet.`,
-      });
-       if (navigator.share) {
+      if (navigator.share) {
             navigator.share({
                 title: file.name,
-                url: `https://picsum.photos/400/300?random=${file.id}`
+                text: `Check out this file: ${file.name}`,
+                url: window.location.href, // Or a direct link to the file if available
             }).then(() => {
-                console.log('Successful share');
+                toast({ title: "Shared", description: `${file.name} shared successfully.` });
             }).catch((error) => {
                 console.log('Error sharing', error);
+                toast({ title: "Share Error", description: "Could not share file.", variant: "destructive" });
             });
         } else {
-            toast({
-                title: "Share",
-                description: "Sharing is not supported on this browser.",
-            });
+            toast({ title: "Share Not Supported", description: "Web Share API is not supported in your browser." });
         }
   };
 
-  const handleDownload = (file: any) => {
+  const handleDownload = (file: InduxFile) => {
       const link = document.createElement('a');
-      link.href = `https://picsum.photos/400/300?random=${file.id}`;
+      // For actual download, use file.previewUrl or a server endpoint
+      link.href = file.previewUrl || `https://placehold.co/200x150.png?text=${file.name}`;
       link.download = file.name;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast({
-          title: "Download",
-          description: `Downloading ${file.name}`,
-      });
+      toast({ title: "Download Started", description: `Downloading ${file.name}` });
   };
 
-  const handleRename = (file: any) => {
-      console.log(`Rename ${file.name}`);
-      toast({
-          title: "Rename",
-          description: `Rename ${file.name} functionality not implemented yet.`,
-      });
+  const handleRename = (file: InduxFile) => {
+      const newName = prompt(`Rename ${file.name} to:`, file.name);
+      if (newName && newName.trim() !== "") {
+          setFiles(currentFiles => currentFiles.map(f => f.id === file.id ? { ...f, name: newName.trim() } : f));
+          toast({ title: "Renamed", description: `${file.name} renamed to ${newName.trim()}` });
+      }
   };
 
-  const handleDelete = (file: any) => {
-      setFiles(currentFiles => currentFiles.filter(f => f.id !== file.id));
-      toast({
-          title: "Delete",
-          description: `${file.name} deleted successfully.`,
-      });
+  const handleDelete = (file: InduxFile) => {
+      if (confirm(`Are you sure you want to delete ${file.name}?`)) {
+        setFiles(currentFiles => currentFiles.filter(f => f.id !== file.id));
+        toast({ title: "Deleted", description: `${file.name} deleted successfully.` });
+      }
   };
 
-    const handleAddFile = () => {
-        setIsUploadModalOpen(true);
-    };
+  const handleAddFile = () => setIsUploadModalOpen(true);
+  const handleCloseUploadModal = () => {
+      setIsUploadModalOpen(false);
+      setSelectedFileToUpload(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
-    const handleCloseUploadModal = () => {
-        setIsUploadModalOpen(false);
-        setSelectedFileToUpload(null);
-    };
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) setSelectedFileToUpload(file);
+  };
 
-    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            setSelectedFileToUpload(file);
+  const handleUploadFileConfirm = () => {
+    if (selectedFileToUpload) {
+        const fileType = selectedFileToUpload.name.split('.').pop()?.toLowerCase() || 'default';
+        const newFile: InduxFile = {
+            id: String(Date.now()),
+            name: selectedFileToUpload.name,
+            type: fileType,
+            folderId: selectedFolderId || folders[0]?.id || "others", // Default to selected or first root or "others"
+            size: (selectedFileToUpload.size / 1024 / 1024).toFixed(2) + " MB",
+            date: new Date().toLocaleDateString(),
+            previewUrl: URL.createObjectURL(selectedFileToUpload), // For local preview
+            dataAiHint: fileType, // Basic hint
+        };
+        setFiles(currentFiles => [...currentFiles, newFile]);
+        toast({ title: "File Uploaded", description: `${selectedFileToUpload.name} uploaded successfully.`});
+        handleCloseUploadModal();
+    } else {
+        toast({ title: "Error", description: "No file selected.", variant: "destructive" });
+    }
+  };
+
+  const handleCreateFolder = () => setIsCreateFolderModalOpen(true);
+  const handleCloseCreateFolderModal = () => {
+      setIsCreateFolderModalOpen(false);
+      setNewFolderName("");
+      setNewFolderIcon(FolderIconLucide);
+  };
+  const handleIconSelect = (icon: React.ElementType) => setNewFolderIcon(icon);
+
+  const findFolderById = (items: InduxFolder[], id: string): InduxFolder | null => {
+    for (const item of items) {
+        if (item.id === id) return item;
+        if (item.children && item.children.length > 0) {
+            const found = findFolderById(item.children, id);
+            if (found) return found;
         }
-    };
+    }
+    return null;
+  };
 
-    const handleUploadFileConfirm = () => {
-        if (selectedFileToUpload) {
-            const fileType = selectedFileToUpload.name.split('.').pop() || 'default';
-            const newFile = {
-                id: String(Date.now()),
-                name: selectedFileToUpload.name,
-                type: fileType,
-                folder: selectedFolder || "Others",
-                size: (selectedFileToUpload.size / 1024 / 1024).toFixed(2) + " MB",
-                date: new Date().toLocaleDateString(),
-            };
-            setFiles(currentFiles => [...currentFiles, newFile]);
-            setIsUploadModalOpen(false);
-            toast({
-                title: "File Uploaded",
-                description: `${selectedFileToUpload.name} uploaded successfully.`,
-            });
-            setSelectedFileToUpload(null);
-             handleCloseUploadModal();
-        } else {
-            toast({
-                title: "Error",
-                description: "No file selected.",
-            });
-        }
-    };
+  const addFolderRecursively = (items: InduxFolder[], parentId: string, folderToAdd: InduxFolder): InduxFolder[] => {
+    return items.map(item => {
+      if (item.id === parentId) {
+        return { ...item, children: [...item.children, folderToAdd], isExpanded: true };
+      }
+      if (item.children && item.children.length > 0) {
+        return { ...item, children: addFolderRecursively(item.children, parentId, folderToAdd) };
+      }
+      return item;
+    });
+  };
 
+  const handleCreateFolderConfirm = () => {
+    if (newFolderName.trim() !== "") {
+        const newFolderId = String(Date.now());
+        const newFolderToAdd: InduxFolder = {
+            id: newFolderId,
+            name: newFolderName.trim(),
+            icon: newFolderIcon,
+            children: [],
+            isExpanded: true,
+        };
 
-
-  const handleCreateFolder = () => {
-        setIsCreateFolderModalOpen(true);
-    };
-
-    const handleCloseCreateFolderModal = () => {
-        setIsCreateFolderModalOpen(false);
-        setNewFolderName("");
-        setNewFolderIcon(FolderIcon);
-    };
-
-    const handleIconSelect = (icon: any) => {
-        setNewFolderIcon(icon);
-    };
-
-    const handleCreateFolderConfirm = () => {
-        if (newFolderName.trim() !== "") {
-            const newFolder = newFolderName.trim();
-            if (!folders.includes(newFolder)) {
-                setFolders([...folders, newFolder]);
-                setIsCreateFolderModalOpen(false);
-                setNewFolderName("");
-                setNewFolderIcon(FolderIcon);
-                toast({
-                    title: "Folder Created",
-                    description: `Folder "${newFolder}" created successfully.`,
-                });
-            } else {
-                toast({
-                    title: "Error",
-                    description: `Folder "${newFolder}" already exists.`,
-                });
+        if (selectedFolderId) {
+            const parentFolder = findFolderById(folders, selectedFolderId);
+            const nameExistsInParent = parentFolder?.children.some(child => child.name === newFolderToAdd.name);
+            if (nameExistsInParent) {
+                 toast({ title: "Error", description: `Folder "${newFolderToAdd.name}" already exists in this location.`, variant: "destructive" });
+                 return;
             }
+            setFolders(prevFolders => addFolderRecursively(prevFolders, selectedFolderId, newFolderToAdd));
         } else {
-            toast({
-                title: "Error",
-                description: "Folder name cannot be empty.",
-            });
+            const nameExistsInRoot = folders.some(folder => folder.name === newFolderToAdd.name);
+             if (nameExistsInRoot) {
+                 toast({ title: "Error", description: `Folder "${newFolderToAdd.name}" already exists at the root.`, variant: "destructive" });
+                 return;
+            }
+            setFolders(prevFolders => [...prevFolders, newFolderToAdd]);
         }
+        toast({ title: "Folder Created", description: `Folder "${newFolderToAdd.name}" created successfully.` });
+        handleCloseCreateFolderModal();
+    } else {
+        toast({ title: "Error", description: "Folder name cannot be empty.", variant: "destructive"});
+    }
+  };
+
+  const toggleFolderExpansion = (folderId: string) => {
+    const updateExpansion = (currentFolders: InduxFolder[]): InduxFolder[] => {
+        return currentFolders.map(f => {
+            if (f.id === folderId) {
+                return { ...f, isExpanded: !f.isExpanded };
+            }
+            if (f.children.length > 0) {
+                return { ...f, children: updateExpansion(f.children) };
+            }
+            return f;
+        });
     };
+    setFolders(prevFolders => updateExpansion(prevFolders));
+  };
+
+  const FolderTreeView: React.FC<{
+    foldersToRender: InduxFolder[];
+    onSelectFolder: (folderId: string) => void;
+    currentSelectedFolderId: string | null;
+    level: number;
+    onToggleExpand: (folderId: string) => void;
+  }> = ({ foldersToRender, onSelectFolder, currentSelectedFolderId, level, onToggleExpand }) => {
+    return (
+      <>
+        {foldersToRender.map((folder) => (
+          <div key={folder.id}>
+            <div
+              style={{ paddingLeft: `${level * 16}px` }} // Indentation for subfolders
+              className={`flex items-center space-x-2 py-2 px-3 rounded-md cursor-pointer hover:bg-blue-700 ${
+                currentSelectedFolderId === folder.id ? "bg-blue-600 text-white" : "text-gray-300 hover:text-white"
+              }`}
+              onClick={() => onSelectFolder(folder.id)}
+            >
+              {folder.children.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="p-1 h-6 w-6 mr-1"
+                  onClick={(e) => { e.stopPropagation(); onToggleExpand(folder.id); }}
+                >
+                  {folder.isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                </Button>
+              )}
+              {!folder.children.length && <span className="w-6 mr-1"></span>} {/* Placeholder for alignment */}
+              {React.createElement(folder.icon, {
+                className: "h-5 w-5", 
+              })}
+              <span className="ml-1">{folder.name}</span>
+            </div>
+            {folder.isExpanded && folder.children.length > 0 && (
+              <FolderTreeView
+                foldersToRender={folder.children}
+                onSelectFolder={onSelectFolder}
+                currentSelectedFolderId={currentSelectedFolderId}
+                level={level + 1}
+                onToggleExpand={onToggleExpand}
+              />
+            )}
+          </div>
+        ))}
+      </>
+    );
+  };
+
 
   return (
     <>
-    <div className="flex h-full">
-      {/* Folder Sidebar */}
-      <div className="w-64 bg-sidebar-background p-4 flex flex-col">
-        <Dialog>
-        <DialogTrigger asChild>
-            <Button variant="outline" className="mb-4 w-full justify-start">
-                <Plus className="mr-2 h-4 w-4" />
-                Add File
-            </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-                <DialogTitle>Upload File</DialogTitle>
-                <DialogDescription>
-                    Choose a file to upload to the selected folder.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-                <input
-                    type="file"
-                    id="file-upload"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                    ref={fileInputRef}
-                />
-                <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
-                    Select File
-                </Button>
-                {selectedFileToUpload && (
-                    <div className="text-sm text-gray-500">
-                        Selected File: {selectedFileToUpload.name}
-                    </div>
-                )}
-            </div>
-            <DialogFooter>
-                <DialogClose asChild>
-                    <Button type="button" variant="secondary">
-                        Cancel
-                    </Button>
-                </DialogClose>
-                <Button type="submit" onClick={handleUploadFileConfirm} disabled={!selectedFileToUpload}>Accept</Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
-        <Dialog>
-        <DialogTrigger asChild>
-            <Button variant="outline" className="mb-4 w-full justify-start">
-                <FolderPlus className="mr-2 h-4 w-4" />
-                Create Folder
-            </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-                <DialogTitle>Create New Folder</DialogTitle>
-                <DialogDescription>
-                    Choose a name and icon for your new folder.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 gap-2">
-                    {FolderIconOptions.map((Icon, index) => (
-                        <Button
-                            key={index}
-                            variant="ghost"
-                            className={`
-                                w-10 h-10 p-0
-                                ${newFolderIcon === Icon ? "bg-accent" : ""}
-                            `}
-                            onClick={() => handleIconSelect(Icon)}
-                            aria-label={`Select ${Icon.name} Icon`}
-                        >
-                            <Icon className="w-5 h-5" />
-                        </Button>
-                    ))}
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="name">Folder Name</Label>
-                    <Input
-                        id="name"
-                        value={newFolderName}
-                        onChange={(e) => setNewFolderName(e.target.value)}
-                        placeholder="Enter folder name"
-                    />
-                </div>
-            </div>
-            <DialogFooter>
-                <DialogClose asChild>
-                    <Button type="button" variant="secondary">
-                        Cancel
-                    </Button>
-                </DialogClose>
-                <Button type="submit" onClick={handleCreateFolderConfirm}>Create</Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
-    <ScrollArea className="h-[calc(100vh - 200px)] w-full">
-        {folders.map((folder) => (
-          <div
-            key={folder}
-            className={`flex items-center space-x-2 py-2 px-3 rounded-md cursor-pointer hover:bg-hover-active ${
-              selectedFolder === folder ? "bg-primary text-primary-foreground" : "text-secondary-text"
-            }`}
-            onClick={() => setSelectedFolder(folder)}
-          >
-            {React.createElement(folderIcons[folder] || FolderIcon, {
-              className: "mr-2",
-            })}
-            <span>{folder}</span>
-          </div>
-        ))}
-        </ScrollArea>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 p-4 flex flex-col">
-        {/* Search Bar */}
-        <div className="mb-4 flex items-center space-x-2">
-          <Search className="text-secondary-text" />
-          <Input
-            type="text"
-            placeholder="Search files..."
-            className="bg-file-cards text-main-text border-soft-borders rounded-md py-2 px-3 w-full focus:outline-none focus:ring-2 focus:ring-primary"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        {/* File Listing */}
-        <ScrollArea className="h-[calc(100vh - 150px)] w-full">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredFiles.map((file) => {
-              const FileIconComponent = getFileIcon(file.type);
-              return (
-                <div
-                  key={file.id}
-                  className={`bg-file-cards rounded-md p-3 flex items-center justify-between hover:bg-hover-active cursor-pointer ${
-                    selectedFile?.id === file.id ? 'ring-2 ring-primary' : ''
-                  }`}
-                >
-                  <div className="flex items-center" onClick={() => handleFileClick(file)}>
-                    <FileIconComponent className="mr-2 text-main-text" />
-                    <span className="text-main-text">{file.name}</span>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <MoreVertical className="text-secondary-text hover:text-main-text" />
-                        <span className="sr-only">Open menu</span>
+      <div className="flex h-screen bg-gray-900 text-white">
+        {/* Folder Sidebar */}
+        <div className="w-72 bg-gray-800 p-4 flex flex-col border-r border-gray-700">
+          <div className="mb-4">
+            <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
+              <Button variant="outline" className="mb-2 w-full justify-start bg-blue-600 hover:bg-blue-700 text-white" onClick={handleAddFile}>
+                  <Plus className="mr-2 h-4 w-4" /> Add File
+              </Button>
+              <DialogContent className="sm:max-w-[425px] bg-gray-800 border-gray-700">
+                  <DialogHeader>
+                      <DialogTitle className="text-white">Upload File</DialogTitle>
+                      <DialogDescription className="text-gray-400">
+                          Choose a file to upload. It will be added to the currently selected folder or root.
+                      </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                      <input
+                          type="file"
+                          id="file-upload"
+                          className="hidden"
+                          onChange={handleFileUpload}
+                          ref={fileInputRef}
+                      />
+                      <Button variant="secondary" className="bg-gray-700 hover:bg-gray-600 text-white" onClick={() => fileInputRef.current?.click()}>
+                          Select File
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuItem onClick={() => handleShare(file)}>
-                        <Share2 className="mr-2 h-4 w-4" /> <span>Share</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => console.log("Move")}>
-                        <FolderPlus className="mr-2 h-4 w-4" /> <span>Move to...</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleRename(file)}>
-                        <Edit className="mr-2 h-4 w-4" /> <span>Rename</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDownload(file)}>
-                        <Download className="mr-2 h-4 w-4" /> <span>Download</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(file)} className="text-destructive focus:text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" /> <span>Delete</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              );
-            })}
+                      {selectedFileToUpload && (
+                          <div className="text-sm text-gray-300 truncate">
+                              Selected: {selectedFileToUpload.name}
+                          </div>
+                      )}
+                  </div>
+                  <DialogFooter>
+                      <DialogClose asChild>
+                          <Button type="button" variant="ghost" className="text-gray-300 hover:bg-gray-700" onClick={handleCloseUploadModal}>
+                              Cancel
+                          </Button>
+                      </DialogClose>
+                      <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleUploadFileConfirm} disabled={!selectedFileToUpload}>
+                        Accept
+                      </Button>
+                  </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={isCreateFolderModalOpen} onOpenChange={setIsCreateFolderModalOpen}>
+               <Button variant="outline" className="w-full justify-start bg-blue-600 hover:bg-blue-700 text-white" onClick={handleCreateFolder}>
+                  <FolderPlus className="mr-2 h-4 w-4" /> Create Folder
+              </Button>
+              <DialogContent className="sm:max-w-[425px] bg-gray-800 border-gray-700">
+                  <DialogHeader>
+                      <DialogTitle className="text-white">Create New Folder</DialogTitle>
+                      <DialogDescription className="text-gray-400">
+                          Choose a name and icon for your new folder.
+                      </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 gap-2">
+                          {FolderIconOptions.map((IconComponent, index) => (
+                              <Button
+                                  key={index}
+                                  variant="ghost"
+                                  className={`w-10 h-10 p-0 hover:bg-gray-700 ${newFolderIcon === IconComponent ? "bg-blue-600 ring-2 ring-blue-400" : "bg-gray-700"}`}
+                                  onClick={() => handleIconSelect(IconComponent)}
+                                  aria-label={`Select ${IconComponent.displayName || IconComponent.name} Icon`}
+                              >
+                                  <IconComponent className="w-5 h-5 text-white" />
+                              </Button>
+                          ))}
+                      </div>
+                      <div className="grid gap-2">
+                          <Label htmlFor="name" className="text-gray-300">Folder Name</Label>
+                          <Input
+                              id="name"
+                              value={newFolderName}
+                              onChange={(e) => setNewFolderName(e.target.value)}
+                              placeholder="Enter folder name"
+                              className="bg-gray-700 border-gray-600 text-white focus:border-blue-500"
+                          />
+                      </div>
+                  </div>
+                  <DialogFooter>
+                       <DialogClose asChild>
+                          <Button type="button" variant="ghost" className="text-gray-300 hover:bg-gray-700" onClick={handleCloseCreateFolderModal}>
+                              Cancel
+                          </Button>
+                      </DialogClose>
+                      <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleCreateFolderConfirm}>Create</Button>
+                  </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
-        </ScrollArea>
-      </div>
-
-      {/* File Preview Modal */}
-      {isModalOpen && (
-         <div className="fixed top-0 left-0 w-full h-full bg-gray-800 bg-opacity-75 flex items-center justify-center">
-          <div className="bg-file-cards rounded-lg p-4 max-w-3xl max-h-3xl relative" ref={modalRef}>
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-xl text-main-text">{selectedFile?.name}</h3>
-                <Button variant="ghost" className="h-8 w-8 p-0 rounded-full" onClick={handleCloseModal}>
-                  <X className="text-secondary-text hover:text-red-500" />
-                  <span className="sr-only">Close</span>
-                </Button>
-              </div>
-              <div className="flex items-center justify-center mb-4">
-                <Button variant="ghost" size="icon" onClick={handleZoomIn} aria-label="Zoom In">
-                  <ZoomIn className="h-5 w-5 text-secondary-text" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={handleZoomOut} aria-label="Zoom Out">
-                  <ZoomOut className="h-5 w-5 text-secondary-text" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={(e) => handlePan(e, "left")} aria-label="Pan Left">
-                  <ArrowLeft className="h-5 w-5 text-secondary-text" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={(e) => handlePan(e, "right")} aria-label="Pan Right">
-                  <ArrowRight className="h-5 w-5 text-secondary-text" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={(e) => handlePan(e, "up")} aria-label="Pan Up">
-                  <ArrowUp className="h-5 w-5 text-secondary-text" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={(e) => handlePan(e, "down")} aria-label="Pan Down">
-                  <ArrowDown className="h-5 w-5 text-secondary-text" />
-                </Button>
-              </div>
-            {selectedFile?.type === "pdf" ? (
-              <div
-                style={{
-                  width: '100%',
-                  height: '500px',
-                  overflow: 'auto',
-                  transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
-                  transformOrigin: 'top left',
-                }}
-              >
-                <p className="text-main-text">PDF Preview Placeholder</p>
-              </div>
-            ) : selectedFile?.type === "png" || selectedFile?.type === "jpg" || selectedFile?.type === "jpeg" || selectedFile?.type === "svg" ? (
-              <div
-                style={{
-                  width: '100%',
-                  height: '500px',
-                  overflow: 'auto',
-                  transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
-                  transformOrigin: 'top left',
-                }}
-              >
-                <img
-                  src={`https://picsum.photos/400/300?random=${selectedFile.id}`}
-                  alt="Preview"
-                  className="max-h-96"
-                  style={{
-                    width: 'auto',
-                    height: 'auto',
-                    maxWidth: 'none',
-                    maxHeight: 'none',
-                  }}
-                />
-              </div>
-            ) : (
-              <p className="text-main-text">Unsupported file format</p>
-            )}
-          </div>
+          <ScrollArea className="h-full">
+            <FolderTreeView
+              foldersToRender={folders}
+              onSelectFolder={setSelectedFolderId}
+              currentSelectedFolderId={selectedFolderId}
+              level={0}
+              onToggleExpand={toggleFolderExpansion}
+            />
+          </ScrollArea>
         </div>
-      )}
-    </div>
+
+        {/* Main Content */}
+        <div className="flex-1 p-6 flex flex-col">
+          <div className="mb-6 flex items-center space-x-2">
+            <Search className="text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Search files..."
+              className="bg-gray-800 text-white border-gray-700 rounded-md py-2 px-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <ScrollArea className="flex-grow">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredFiles.map((file) => {
+                const FileIconComponent = getFileIcon(file.type);
+                return (
+                  <div
+                    key={file.id}
+                    className={`bg-gray-800 rounded-lg p-4 flex flex-col justify-between shadow-md hover:shadow-lg transition-shadow duration-200 ${
+                      selectedFile?.id === file.id ? 'ring-2 ring-blue-500' : 'border border-gray-700 hover:border-gray-600'
+                    }`}
+                  >
+                    <div className="flex items-center mb-3 cursor-pointer" onClick={() => handleFileClick(file)}>
+                      <FileIconComponent className="mr-3 text-blue-400 h-6 w-6 flex-shrink-0" />
+                      <span className="text-gray-100 text-sm font-medium truncate" title={file.name}>{file.name}</span>
+                    </div>
+                    <div className="text-xs text-gray-400 mb-3">
+                        <span>{file.size}</span> | <span>{file.date}</span>
+                    </div>
+                    <div className="flex items-center justify-end pt-2 border-t border-gray-700">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0 text-gray-400 hover:text-white">
+                            <MoreVertical />
+                            <span className="sr-only">Open menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48 bg-gray-800 border-gray-700 text-white">
+                          <DropdownMenuItem onClick={() => handleFileClick(file)} className="hover:bg-gray-700">
+                            <FileIcon className="mr-2 h-4 w-4 text-blue-400" /> Open
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleShare(file)} className="hover:bg-gray-700">
+                            <Share2 className="mr-2 h-4 w-4 text-blue-400" /> Share
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDownload(file)} className="hover:bg-gray-700">
+                            <Download className="mr-2 h-4 w-4 text-blue-400" /> Download
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleRename(file)} className="hover:bg-gray-700">
+                            <Edit className="mr-2 h-4 w-4 text-blue-400" /> Rename
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDelete(file)} className="text-red-400 hover:bg-red-700 hover:text-white focus:bg-red-700 focus:text-white">
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {filteredFiles.length === 0 && searchTerm && (
+                <div className="text-center text-gray-500 mt-10">No files found matching "{searchTerm}".</div>
+            )}
+             {filteredFiles.length === 0 && !searchTerm && selectedFolderId && (
+                <div className="text-center text-gray-500 mt-10">This folder is empty.</div>
+            )}
+          </ScrollArea>
+        </div>
+
+        {/* File Preview Modal */}
+        {isModalOpen && selectedFile && (
+           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-gray-700" ref={modalRef}>
+                <div className="flex justify-between items-center p-4 border-b border-gray-700">
+                  <h3 className="text-xl text-white truncate pr-4">{selectedFile.name}</h3>
+                  <div className="flex items-center space-x-2">
+                    <Button variant="ghost" size="icon" onClick={handleZoomIn} aria-label="Zoom In" className="text-gray-400 hover:text-white">
+                      <ZoomIn className="h-5 w-5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={handleZoomOut} aria-label="Zoom Out" className="text-gray-400 hover:text-white">
+                      <ZoomOut className="h-5 w-5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={(e) => handlePan(e, "left")} aria-label="Pan Left" className="text-gray-400 hover:text-white">
+                      <ArrowLeft className="h-5 w-5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={(e) => handlePan(e, "right")} aria-label="Pan Right" className="text-gray-400 hover:text-white">
+                      <ArrowRight className="h-5 w-5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={(e) => handlePan(e, "up")} aria-label="Pan Up" className="text-gray-400 hover:text-white">
+                      <ArrowUp className="h-5 w-5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={(e) => handlePan(e, "down")} aria-label="Pan Down" className="text-gray-400 hover:text-white">
+                      <ArrowDown className="h-5 w-5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-red-500" onClick={handleCloseModal}>
+                      <X /> <span className="sr-only">Close</span>
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex-grow p-4 overflow-auto flex items-center justify-center">
+                    <div
+                        className="transform transition-transform duration-200"
+                        style={{ transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`, transformOrigin: 'center center' }}
+                    >
+                  {selectedFile.type === "pdf" ? (
+                      <iframe src={selectedFile.previewUrl || `https://docs.google.com/gview?url=https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf&embedded=true`} className="w-[800px] h-[600px] max-w-full max-h-full border-0" title={selectedFile.name}></iframe>
+                  ) : selectedFile.type === "png" || selectedFile.type === "jpg" || selectedFile.type === "jpeg" || selectedFile.type === "svg" ? (
+                      <img
+                        src={selectedFile.previewUrl || "https://placehold.co/800x600.png"}
+                        alt={`Preview of ${selectedFile.name}`}
+                        className="max-w-full max-h-full object-contain"
+                        data-ai-hint={selectedFile.dataAiHint || "image file"}
+                      />
+                  ) : (
+                    <div className="text-center text-gray-400">
+                        <FileIcon size={64} className="mx-auto mb-2" />
+                        <p>Unsupported file format for preview.</p>
+                        <p className="text-sm">{selectedFile.name}</p>
+                    </div>
+                  )}
+                  </div>
+                </div>
+            </div>
+          </div>
+        )}
+      </div>
     </>
   );
 };
 
 export default FileExplorer;
+
+    
