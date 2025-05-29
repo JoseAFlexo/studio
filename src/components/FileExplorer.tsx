@@ -28,6 +28,7 @@ import {
   Plus,
   ChevronRight,
   ChevronDown,
+  FolderSymlink,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -38,7 +39,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import {
     Dialog,
     DialogContent,
@@ -47,6 +48,7 @@ import {
     DialogDescription,
     DialogFooter,
     DialogClose,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
@@ -146,19 +148,18 @@ const FileExplorer = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFileToUpload, setSelectedFileToUpload] = useState<File | null>(null);
+  const { toast } = useToast();
+
+  const [isRenameFolderModalOpen, setIsRenameFolderModalOpen] = useState(false);
+  const [folderToRename, setFolderToRename] = useState<InduxFolder | null>(null);
+  const [renamedFolderName, setRenamedFolderName] = useState("");
+  const [isDeleteFolderConfirmOpen, setIsDeleteFolderConfirmOpen] = useState(false);
+  const [folderToDelete, setFolderToDelete] = useState<InduxFolder | null>(null);
 
 
   const filteredFiles = files.filter((file) => {
     if (selectedFolderId && file.folderId !== selectedFolderId) {
       return false;
-    }
-    if (!selectedFolderId && file.folderId) { // Show only root files if no folder selected
-        const rootFolderIds = folders.map(f => f.id);
-        // This logic might need adjustment if files can truly be "root" (no folderId)
-        // For now, assume files always belong to a folder. If no folder is selected, show nothing or all.
-        // Let's adjust to show files of selected folder, or all files if no folder selected.
-        // If no folder is selected, it implies we are at root, so perhaps show files with no folderId or from all root folders.
-        // Current logic: if a folder is selected, filter by it. Otherwise, show all files that match search.
     }
     return file.name.toLowerCase().includes(searchTerm.toLowerCase());
   });
@@ -211,27 +212,32 @@ const FileExplorer = () => {
   }, [isModalOpen]);
 
   const handleShare = (file: InduxFile) => {
-      console.log(`Share ${file.name}`);
       if (navigator.share) {
             navigator.share({
                 title: file.name,
                 text: `Check out this file: ${file.name}`,
-                url: window.location.href, // Or a direct link to the file if available
+                url: file.previewUrl || window.location.href, 
             }).then(() => {
                 toast({ title: "Shared", description: `${file.name} shared successfully.` });
             }).catch((error) => {
-                console.log('Error sharing', error);
+                console.error('Error sharing', error);
                 toast({ title: "Share Error", description: "Could not share file.", variant: "destructive" });
             });
         } else {
-            toast({ title: "Share Not Supported", description: "Web Share API is not supported in your browser." });
+            // Fallback for browsers that don't support Web Share API (e.g., copy to clipboard)
+            if (file.previewUrl) {
+                navigator.clipboard.writeText(file.previewUrl)
+                    .then(() => toast({ title: "Link Copied", description: "File link copied to clipboard." }))
+                    .catch(() => toast({ title: "Error", description: "Could not copy link.", variant: "destructive" }));
+            } else {
+                 toast({ title: "Share Not Supported", description: "Web Share API is not supported in your browser, and no direct link available." });
+            }
         }
   };
 
   const handleDownload = (file: InduxFile) => {
       const link = document.createElement('a');
-      // For actual download, use file.previewUrl or a server endpoint
-      link.href = file.previewUrl || `https://placehold.co/200x150.png?text=${file.name}`;
+      link.href = file.previewUrl || `data:text/plain;charset=utf-8,Content for ${file.name}`;
       link.download = file.name;
       document.body.appendChild(link);
       link.click();
@@ -239,7 +245,7 @@ const FileExplorer = () => {
       toast({ title: "Download Started", description: `Downloading ${file.name}` });
   };
 
-  const handleRename = (file: InduxFile) => {
+  const handleRenameFile = (file: InduxFile) => {
       const newName = prompt(`Rename ${file.name} to:`, file.name);
       if (newName && newName.trim() !== "") {
           setFiles(currentFiles => currentFiles.map(f => f.id === file.id ? { ...f, name: newName.trim() } : f));
@@ -247,7 +253,7 @@ const FileExplorer = () => {
       }
   };
 
-  const handleDelete = (file: InduxFile) => {
+  const handleDeleteFile = (file: InduxFile) => {
       if (confirm(`Are you sure you want to delete ${file.name}?`)) {
         setFiles(currentFiles => currentFiles.filter(f => f.id !== file.id));
         toast({ title: "Deleted", description: `${file.name} deleted successfully.` });
@@ -261,7 +267,7 @@ const FileExplorer = () => {
       if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUploadChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) setSelectedFileToUpload(file);
   };
@@ -273,11 +279,11 @@ const FileExplorer = () => {
             id: String(Date.now()),
             name: selectedFileToUpload.name,
             type: fileType,
-            folderId: selectedFolderId || folders[0]?.id || "others", // Default to selected or first root or "others"
+            folderId: selectedFolderId || folders[0]?.id || "others", 
             size: (selectedFileToUpload.size / 1024 / 1024).toFixed(2) + " MB",
             date: new Date().toLocaleDateString(),
-            previewUrl: URL.createObjectURL(selectedFileToUpload), // For local preview
-            dataAiHint: fileType, // Basic hint
+            previewUrl: URL.createObjectURL(selectedFileToUpload), 
+            dataAiHint: fileType, 
         };
         setFiles(currentFiles => [...currentFiles, newFile]);
         toast({ title: "File Uploaded", description: `${selectedFileToUpload.name} uploaded successfully.`});
@@ -295,20 +301,31 @@ const FileExplorer = () => {
   };
   const handleIconSelect = (icon: React.ElementType) => setNewFolderIcon(icon);
 
-  const findFolderById = (items: InduxFolder[], id: string): InduxFolder | null => {
+  const findFolderAndParentRecursive = (
+    items: InduxFolder[],
+    id: string,
+    parent: InduxFolder | null = null
+  ): { folder: InduxFolder | null; parent: InduxFolder | null } => {
     for (const item of items) {
-        if (item.id === id) return item;
+        if (item.id === id) return { folder: item, parent };
         if (item.children && item.children.length > 0) {
-            const found = findFolderById(item.children, id);
-            if (found) return found;
+            const found = findFolderAndParentRecursive(item.children, id, item);
+            if (found.folder) return found;
         }
     }
-    return null;
+    return { folder: null, parent: null };
   };
-
+  
   const addFolderRecursively = (items: InduxFolder[], parentId: string, folderToAdd: InduxFolder): InduxFolder[] => {
     return items.map(item => {
       if (item.id === parentId) {
+        // Check for duplicate name in the current level
+        const nameExists = item.children.some(child => child.name.toLowerCase() === folderToAdd.name.toLowerCase());
+        if (nameExists) {
+            toast({ title: "Error", description: `Folder "${folderToAdd.name}" already exists in "${item.name}".`, variant: "destructive" });
+            // Indicate failure by not adding, might need a more robust error handling mechanism
+            return { ...item }; 
+        }
         return { ...item, children: [...item.children, folderToAdd], isExpanded: true };
       }
       if (item.children && item.children.length > 0) {
@@ -330,16 +347,16 @@ const FileExplorer = () => {
         };
 
         if (selectedFolderId) {
-            const parentFolder = findFolderById(folders, selectedFolderId);
-            const nameExistsInParent = parentFolder?.children.some(child => child.name === newFolderToAdd.name);
-            if (nameExistsInParent) {
-                 toast({ title: "Error", description: `Folder "${newFolderToAdd.name}" already exists in this location.`, variant: "destructive" });
+            // Adding as a subfolder
+            const { folder: parentFolder } = findFolderAndParentRecursive(folders, selectedFolderId);
+            if (parentFolder && parentFolder.children.some(child => child.name.toLowerCase() === newFolderToAdd.name.toLowerCase())) {
+                 toast({ title: "Error", description: `Folder "${newFolderToAdd.name}" already exists in "${parentFolder.name}".`, variant: "destructive" });
                  return;
             }
             setFolders(prevFolders => addFolderRecursively(prevFolders, selectedFolderId, newFolderToAdd));
         } else {
-            const nameExistsInRoot = folders.some(folder => folder.name === newFolderToAdd.name);
-             if (nameExistsInRoot) {
+            // Adding as a root folder
+            if (folders.some(folder => folder.name.toLowerCase() === newFolderToAdd.name.toLowerCase())) {
                  toast({ title: "Error", description: `Folder "${newFolderToAdd.name}" already exists at the root.`, variant: "destructive" });
                  return;
             }
@@ -358,7 +375,7 @@ const FileExplorer = () => {
             if (f.id === folderId) {
                 return { ...f, isExpanded: !f.isExpanded };
             }
-            if (f.children.length > 0) {
+            if (f.children && f.children.length > 0) {
                 return { ...f, children: updateExpansion(f.children) };
             }
             return f;
@@ -367,39 +384,153 @@ const FileExplorer = () => {
     setFolders(prevFolders => updateExpansion(prevFolders));
   };
 
+  // Folder actions
+  const handleRenameFolderClick = (folder: InduxFolder) => {
+    setFolderToRename(folder);
+    setRenamedFolderName(folder.name);
+    setIsRenameFolderModalOpen(true);
+  };
+
+  const updateFolderNameRecursive = (
+    items: InduxFolder[],
+    folderId: string,
+    newName: string,
+    parentId: string | null
+  ): InduxFolder[] => {
+    return items.map(item => {
+        if (item.id === folderId) {
+            return { ...item, name: newName };
+        }
+        if (item.children && item.children.length > 0) {
+            return { ...item, children: updateFolderNameRecursive(item.children, folderId, newName, item.id) };
+        }
+        return item;
+    });
+  };
+  
+  const handleRenameFolderConfirm = () => {
+    if (!folderToRename || !renamedFolderName.trim()) {
+        toast({ title: "Error", description: "Folder name cannot be empty.", variant: "destructive" });
+        return;
+    }
+    const { parent } = findFolderAndParentRecursive(folders, folderToRename.id);
+    const siblings = parent ? parent.children : folders;
+    if (siblings.some(f => f.id !== folderToRename.id && f.name.toLowerCase() === renamedFolderName.trim().toLowerCase())) {
+        toast({ title: "Error", description: `A folder named "${renamedFolderName.trim()}" already exists in this location.`, variant: "destructive" });
+        return;
+    }
+
+    setFolders(currentFolders => updateFolderNameRecursive(currentFolders, folderToRename.id, renamedFolderName.trim(), parent ? parent.id : null));
+    toast({ title: "Folder Renamed", description: `Folder "${folderToRename.name}" renamed to "${renamedFolderName.trim()}".` });
+    setIsRenameFolderModalOpen(false);
+    setFolderToRename(null);
+  };
+
+
+  const collectAllFolderIdsRecursive = (folder: InduxFolder): string[] => {
+    let ids = [folder.id];
+    folder.children.forEach(child => {
+        ids = ids.concat(collectAllFolderIdsRecursive(child));
+    });
+    return ids;
+  };
+
+  const deleteFolderFromTreeRecursive = (
+    currentFolders: InduxFolder[],
+    folderIdToDelete: string
+  ): InduxFolder[] => {
+    return currentFolders
+        .filter(folder => folder.id !== folderIdToDelete)
+        .map(folder => ({
+            ...folder,
+            children: folder.children ? deleteFolderFromTreeRecursive(folder.children, folderIdToDelete) : [],
+        }));
+  };
+
+  const handleDeleteFolderClick = (folder: InduxFolder) => {
+    setFolderToDelete(folder);
+    setIsDeleteFolderConfirmOpen(true);
+  };
+
+  const handleDeleteFolderConfirm = () => {
+    if (!folderToDelete) return;
+
+    const idsToDelete = collectAllFolderIdsRecursive(folderToDelete);
+    
+    setFolders(currentFolders => deleteFolderFromTreeRecursive(currentFolders, folderToDelete.id));
+    setFiles(currentFiles => currentFiles.filter(file => !idsToDelete.includes(file.folderId)));
+
+    if (selectedFolderId && idsToDelete.includes(selectedFolderId)) {
+        setSelectedFolderId(null);
+    }
+
+    toast({ title: "Folder Deleted", description: `Folder "${folderToDelete.name}" and its contents deleted.` });
+    setIsDeleteFolderConfirmOpen(false);
+    setFolderToDelete(null);
+  };
+
+  const handleMoveFolderClick = (folder: InduxFolder) => {
+    // Placeholder for move functionality
+    toast({ title: "Move Folder", description: `Move functionality for "${folder.name}" is not yet implemented.` });
+    console.log("Move folder:", folder);
+  };
+
+
   const FolderTreeView: React.FC<{
     foldersToRender: InduxFolder[];
     onSelectFolder: (folderId: string) => void;
     currentSelectedFolderId: string | null;
     level: number;
     onToggleExpand: (folderId: string) => void;
-  }> = ({ foldersToRender, onSelectFolder, currentSelectedFolderId, level, onToggleExpand }) => {
+    onRenameFolder: (folder: InduxFolder) => void;
+    onDeleteFolder: (folder: InduxFolder) => void;
+    onMoveFolder: (folder: InduxFolder) => void;
+  }> = ({ foldersToRender, onSelectFolder, currentSelectedFolderId, level, onToggleExpand, onRenameFolder, onDeleteFolder, onMoveFolder }) => {
     return (
       <>
         {foldersToRender.map((folder) => (
           <div key={folder.id}>
             <div
-              style={{ paddingLeft: `${level * 16}px` }} // Indentation for subfolders
-              className={`flex items-center space-x-2 py-2 px-3 rounded-md cursor-pointer hover:bg-blue-700 ${
+              className={`flex items-center space-x-1 py-2 px-3 rounded-md cursor-pointer hover:bg-blue-700 group ${
                 currentSelectedFolderId === folder.id ? "bg-blue-600 text-white" : "text-gray-300 hover:text-white"
               }`}
               onClick={() => onSelectFolder(folder.id)}
+              style={{ paddingLeft: `${level * 12 + (folder.children.length > 0 ? 0 : 24)}px` }} // Adjusted padding
             >
               {folder.children.length > 0 && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="p-1 h-6 w-6 mr-1"
+                  className="p-0 h-6 w-6 mr-1 hover:bg-transparent focus:bg-transparent"
                   onClick={(e) => { e.stopPropagation(); onToggleExpand(folder.id); }}
                 >
                   {folder.isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                 </Button>
               )}
-              {!folder.children.length && <span className="w-6 mr-1"></span>} {/* Placeholder for alignment */}
+              
               {React.createElement(folder.icon, {
-                className: "h-5 w-5", 
+                className: "h-5 w-5 flex-shrink-0", 
               })}
-              <span className="ml-1">{folder.name}</span>
+              <span className="ml-1 flex-grow truncate" title={folder.name}>{folder.name}</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                  <Button variant="ghost" size="icon" className="p-1 h-6 w-6 opacity-0 group-hover:opacity-100 focus:opacity-100 data-[state=open]:opacity-100 text-gray-400 hover:text-white">
+                    <MoreVertical size={16} />
+                    <span className="sr-only">Folder options</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-gray-800 border-gray-700 text-white" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenuItem onClick={() => onRenameFolder(folder)} className="hover:bg-gray-700">
+                    <Edit className="mr-2 h-4 w-4 text-blue-400" /> Rename
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onMoveFolder(folder)} className="hover:bg-gray-700">
+                    <FolderSymlink className="mr-2 h-4 w-4 text-blue-400" /> Move
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onDeleteFolder(folder)} className="text-red-400 hover:bg-red-700 hover:text-white focus:bg-red-700 focus:text-white">
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             {folder.isExpanded && folder.children.length > 0 && (
               <FolderTreeView
@@ -408,6 +539,9 @@ const FileExplorer = () => {
                 currentSelectedFolderId={currentSelectedFolderId}
                 level={level + 1}
                 onToggleExpand={onToggleExpand}
+                onRenameFolder={onRenameFolder}
+                onDeleteFolder={onDeleteFolder}
+                onMoveFolder={onMoveFolder}
               />
             )}
           </div>
@@ -422,16 +556,18 @@ const FileExplorer = () => {
       <div className="flex h-screen bg-gray-900 text-white">
         {/* Folder Sidebar */}
         <div className="w-72 bg-gray-800 p-4 flex flex-col border-r border-gray-700">
-          <div className="mb-4">
+          <div className="mb-4 space-y-2">
             <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
-              <Button variant="outline" className="mb-2 w-full justify-start bg-blue-600 hover:bg-blue-700 text-white" onClick={handleAddFile}>
-                  <Plus className="mr-2 h-4 w-4" /> Add File
-              </Button>
+             <DialogTrigger asChild>
+                <Button variant="outline" className="w-full justify-start bg-blue-600 hover:bg-blue-700 text-white">
+                    <Plus className="mr-2 h-4 w-4" /> Add File
+                </Button>
+              </DialogTrigger>
               <DialogContent className="sm:max-w-[425px] bg-gray-800 border-gray-700">
                   <DialogHeader>
                       <DialogTitle className="text-white">Upload File</DialogTitle>
                       <DialogDescription className="text-gray-400">
-                          Choose a file to upload. It will be added to the currently selected folder or root.
+                          Choose a file to upload. It will be added to the currently selected folder or the first root folder.
                       </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
@@ -439,7 +575,7 @@ const FileExplorer = () => {
                           type="file"
                           id="file-upload"
                           className="hidden"
-                          onChange={handleFileUpload}
+                          onChange={handleFileUploadChange}
                           ref={fileInputRef}
                       />
                       <Button variant="secondary" className="bg-gray-700 hover:bg-gray-600 text-white" onClick={() => fileInputRef.current?.click()}>
@@ -464,9 +600,11 @@ const FileExplorer = () => {
               </DialogContent>
             </Dialog>
             <Dialog open={isCreateFolderModalOpen} onOpenChange={setIsCreateFolderModalOpen}>
-               <Button variant="outline" className="w-full justify-start bg-blue-600 hover:bg-blue-700 text-white" onClick={handleCreateFolder}>
-                  <FolderPlus className="mr-2 h-4 w-4" /> Create Folder
-              </Button>
+               <DialogTrigger asChild>
+                <Button variant="outline" className="w-full justify-start bg-blue-600 hover:bg-blue-700 text-white">
+                    <FolderPlus className="mr-2 h-4 w-4" /> Create Folder
+                </Button>
+               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px] bg-gray-800 border-gray-700">
                   <DialogHeader>
                       <DialogTitle className="text-white">Create New Folder</DialogTitle>
@@ -517,6 +655,9 @@ const FileExplorer = () => {
               currentSelectedFolderId={selectedFolderId}
               level={0}
               onToggleExpand={toggleFolderExpansion}
+              onRenameFolder={handleRenameFolderClick}
+              onDeleteFolder={handleDeleteFolderClick}
+              onMoveFolder={handleMoveFolderClick}
             />
           </ScrollArea>
         </div>
@@ -570,10 +711,10 @@ const FileExplorer = () => {
                           <DropdownMenuItem onClick={() => handleDownload(file)} className="hover:bg-gray-700">
                             <Download className="mr-2 h-4 w-4 text-blue-400" /> Download
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleRename(file)} className="hover:bg-gray-700">
+                          <DropdownMenuItem onClick={() => handleRenameFile(file)} className="hover:bg-gray-700">
                             <Edit className="mr-2 h-4 w-4 text-blue-400" /> Rename
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDelete(file)} className="text-red-400 hover:bg-red-700 hover:text-white focus:bg-red-700 focus:text-white">
+                          <DropdownMenuItem onClick={() => handleDeleteFile(file)} className="text-red-400 hover:bg-red-700 hover:text-white focus:bg-red-700 focus:text-white">
                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -649,10 +790,57 @@ const FileExplorer = () => {
           </div>
         )}
       </div>
+
+      {/* Rename Folder Modal */}
+      <Dialog open={isRenameFolderModalOpen} onOpenChange={setIsRenameFolderModalOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-gray-800 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle>Rename Folder</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Enter a new name for the folder "{folderToRename?.name}".
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Label htmlFor="rename-folder-name" className="text-gray-300">
+              New Folder Name
+            </Label>
+            <Input
+              id="rename-folder-name"
+              value={renamedFolderName}
+              onChange={(e) => setRenamedFolderName(e.target.value)}
+              className="bg-gray-700 border-gray-600 text-white focus:border-blue-500"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => { setIsRenameFolderModalOpen(false); setFolderToRename(null); }} className="text-gray-300 hover:bg-gray-700">
+              Cancel
+            </Button>
+            <Button onClick={handleRenameFolderConfirm} className="bg-blue-600 hover:bg-blue-700 text-white">Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Folder Confirmation Modal */}
+      <Dialog open={isDeleteFolderConfirmOpen} onOpenChange={setIsDeleteFolderConfirmOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-gray-800 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle>Delete Folder</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Are you sure you want to delete the folder "{folderToDelete?.name}" and all its contents? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => { setIsDeleteFolderConfirmOpen(false); setFolderToDelete(null); }} className="text-gray-300 hover:bg-gray-700">
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteFolderConfirm} className="bg-red-600 hover:bg-red-700 text-white">
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
 
 export default FileExplorer;
-
-    
